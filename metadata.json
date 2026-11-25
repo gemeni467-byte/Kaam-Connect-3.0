@@ -1,0 +1,6 @@
+{
+  "name": "Kaam Connect",
+  "description": "सीधा काम, सीधा संपर्क — बिना किसी बिचौलिए के। भारत के मजदूरों, कारीगरों और ठेकेदारों को जोड़ने वाला लाइव काम नेटवर्क।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
