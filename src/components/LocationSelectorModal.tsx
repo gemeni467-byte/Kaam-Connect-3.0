@@ -54,13 +54,13 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-orange-600" />
             <h2 id="location-modal-title" className="text-base font-bold text-slate-900">
-              अपना राज्य और शहर चुनें (All India)
+              Select Your State &amp; City (All India)
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="स्थान चुनना बंद करें"
+            aria-label="Close location selector"
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-200/70"
           >
             <X className="w-5 h-5" />
@@ -73,7 +73,7 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
               htmlFor="modal-state-select"
               className="block text-sm font-semibold text-slate-800 mb-1.5"
             >
-              राज्य (State)
+              State
             </label>
             <select
               id="modal-state-select"
@@ -98,7 +98,7 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
               htmlFor="modal-city-input"
               className="block text-sm font-semibold text-slate-800 mb-1.5"
             >
-              शहर / साइट क्षेत्र (City / Site Area)
+              City / Site Area
             </label>
             <input
               id="modal-city-input"
@@ -107,7 +107,7 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, city: e.target.value }))
               }
-              placeholder="शहर या इंडस्ट्रियल एरिया लिखें"
+              placeholder="Enter city or industrial area"
               className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-orange-500 focus:outline-none"
               required
             />
@@ -135,7 +135,7 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
 
           <div className="pt-2 border-t border-slate-100">
             <span className="block text-xs font-semibold text-slate-600 mb-2">
-              प्रमुख इंडस्ट्रियल शहर (तुरंत चुनें)
+              Major Industrial Hubs (Quick Select)
             </span>
             <div className="flex flex-wrap gap-1.5">
               {ALL_QUICK_CITY_SUGGESTIONS.map((item) => (
@@ -147,7 +147,7 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
                   }
                   className="min-h-[34px] rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:border-slate-400"
                 >
-                  {item.city.split('(')[0].trim()}
+                  {item.city}
                 </button>
               ))}
             </div>
@@ -159,14 +159,14 @@ export const LocationSelectorModal: React.FC<LocationSelectorModalProps> = ({
               onClick={onClose}
               className="flex-1 min-h-[46px] rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              रद्द करें
+              Cancel
             </button>
             <button
               type="submit"
               className="flex-1 min-h-[46px] rounded-xl bg-orange-600 hover:bg-orange-700 text-sm font-bold text-white inline-flex items-center justify-center gap-1.5"
             >
               <Check className="w-4 h-4" />
-              <span>सेट करें</span>
+              <span>Apply Location</span>
             </button>
           </div>
         </form>

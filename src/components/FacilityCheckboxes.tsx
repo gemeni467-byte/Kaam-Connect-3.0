@@ -16,15 +16,15 @@ export const FacilityCheckboxes: React.FC<FacilityCheckboxesProps> = ({
     label: string;
     Icon: React.ComponentType<{ className?: string }>;
   }> = [
-    { key: 'stayFree', label: 'रहना Free', Icon: Home },
-    { key: 'foodFree', label: 'खाना Free', Icon: Utensils },
-    { key: 'travelAllowance', label: 'आने-जाने का किराया', Icon: Bus },
+    { key: 'stayFree', label: 'Free Stay', Icon: Home },
+    { key: 'foodFree', label: 'Free Food', Icon: Utensils },
+    { key: 'travelAllowance', label: 'Travel Allowance', Icon: Bus },
   ];
 
   return (
     <div className="space-y-2">
       <span className="block text-sm font-semibold text-slate-800">
-        साइट पर सुविधाएं (Facility Badges)
+        Site Facilities Provided
       </span>
       <div className="flex flex-wrap gap-2">
         {items.map(({ key, label, Icon }) => {

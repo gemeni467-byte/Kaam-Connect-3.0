@@ -43,7 +43,8 @@ import {
   buildWhatsAppShareUrl,
   canWorkerAcceptRequest,
   formatFacilitiesText,
-  formatRelativeTimeHindi,
+  formatRelativeTime,
+  getAppShareLink,
   isValidIndianMobile,
   isWithinHours,
   matchesLocationFilter,
@@ -137,19 +138,19 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
       : form.requiredCount;
 
     if (!form.contractorName.trim()) {
-      onNotify('ठेकेदार का नाम लिखें', true);
+      onNotify('Please enter contractor name', true);
       return;
     }
     if (!isValidIndianMobile(cleanPhone)) {
-      onNotify('सही 10 अंकों का मोबाइल नंबर लिखें', true);
+      onNotify('Please enter a valid 10-digit mobile number', true);
       return;
     }
     if (!skill) {
-      onNotify('कृपया काम (Skill) लिखें', true);
+      onNotify('Please select or enter a skill / trade', true);
       return;
     }
     if (!Number.isFinite(countVal) || countVal < 1) {
-      onNotify('मजदूरों की संख्या कम से कम 1 रखें', true);
+      onNotify('Worker count must be at least 1', true);
       return;
     }
 
@@ -166,7 +167,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
         siteAddress: form.siteAddress.trim(),
         facilities: form.facilities,
       });
-      onNotify('लाइव रिक्वेस्ट पोस्ट हो गई! आसपास के मजदूरों को अभी दिख रही है।');
+      onNotify('Live request published! Nearby online workers can see it now.');
       setForm((prev) => ({
         ...prev,
         siteAddress: '',
@@ -176,7 +177,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
       onCreated();
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'रिक्वेस्ट भेजने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to publish live request',
         true,
       );
     } finally {
@@ -194,10 +195,10 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
         <div>
           <h3 className="text-base font-bold text-slate-900">
-            तुरंत मजदूर बुलाएं (Live Booking)
+            Hire Workers Instantly (Live Booking)
           </h3>
           <p className="text-xs text-slate-600 mt-0.5">
-            रिक्वेस्ट डालते ही Duty ON कारीगरों को तुरंत नोटिफिकेशन दिखेगा
+            Online workers on Duty ON receive your live request immediately
           </p>
         </div>
       </div>
@@ -208,7 +209,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             htmlFor="live-contractor-name"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            ठेकेदार / आपका नाम <span className="text-orange-600">*</span>
+            Contractor / Company Name <span className="text-orange-600">*</span>
           </label>
           <input
             id="live-contractor-name"
@@ -217,7 +218,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             onChange={(e) =>
               setForm((prev) => ({ ...prev, contractorName: e.target.value }))
             }
-            placeholder="जैसे: रमेश वर्मा"
+            placeholder="e.g. Ramesh Verma"
             className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-orange-500 focus:outline-none"
             required
           />
@@ -228,7 +229,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             htmlFor="live-contractor-phone"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            10 अंकों का मोबाइल नंबर <span className="text-orange-600">*</span>
+            10-Digit Mobile Number <span className="text-orange-600">*</span>
           </label>
           <input
             id="live-contractor-phone"
@@ -251,7 +252,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
 
       <SkillSelectField
         id="live-skill-select"
-        label="कौन-सा कारीगर / मजदूर चाहिए"
+        label="Skill / Trade Needed"
         selectedSkill={form.selectedSkill}
         customSkill={form.customSkill}
         onSelectSkill={(val) =>
@@ -265,7 +266,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
 
       <div className="space-y-2">
         <span className="block text-sm font-semibold text-slate-800">
-          कितने मजदूर चाहिए <span className="text-orange-600">*</span>
+          How many workers needed? <span className="text-orange-600">*</span>
         </span>
         <div className="flex flex-wrap gap-2">
           {WORKER_COUNT_PRESETS.map((preset) => {
@@ -296,13 +297,13 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             type="number"
             min={1}
             max={500}
-            aria-label="अन्य संख्या लिखें"
+            aria-label="Enter custom worker count"
             value={form.customCountInput}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, customCountInput: e.target.value }))
             }
-            placeholder="अन्य संख्या"
-            className="w-28 min-h-[42px] rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold tabular-nums text-slate-900 focus:border-orange-500 focus:outline-none"
+            placeholder="Custom count"
+            className="w-32 min-h-[42px] rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold tabular-nums text-slate-900 focus:border-orange-500 focus:outline-none"
           />
         </div>
       </div>
@@ -313,7 +314,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             htmlFor="live-daily-rate"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            रोज़ाना रेट (₹ प्रति दिन) <span className="text-orange-600">*</span>
+            Daily Wage (₹/day) <span className="text-orange-600">*</span>
           </label>
           <input
             id="live-daily-rate"
@@ -334,7 +335,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             htmlFor="live-state-select"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            राज्य (State)
+            State
           </label>
           <select
             id="live-state-select"
@@ -362,7 +363,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             htmlFor="live-city-input"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            शहर / क्षेत्र <span className="text-orange-600">*</span>
+            City / Site Area <span className="text-orange-600">*</span>
           </label>
           <input
             id="live-city-input"
@@ -372,7 +373,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
             onChange={(e) =>
               setForm((prev) => ({ ...prev, city: e.target.value }))
             }
-            placeholder="राउरकेला (Rourkela)"
+            placeholder="Rourkela"
             className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-orange-500 focus:outline-none"
             required
           />
@@ -389,7 +390,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
           htmlFor="live-site-address"
           className="block text-sm font-semibold text-slate-800 mb-1"
         >
-          साइट का पूरा पता (Site Address)
+          Site Address
         </label>
         <input
           id="live-site-address"
@@ -398,7 +399,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
           onChange={(e) =>
             setForm((prev) => ({ ...prev, siteAddress: e.target.value }))
           }
-          placeholder="जैसे: सेक्टर 19, स्टील प्लांट गेट नंबर 2 के पास"
+          placeholder="e.g. Sector 19, near Steel Plant Gate No. 2"
           className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-orange-500 focus:outline-none"
         />
       </div>
@@ -415,7 +416,7 @@ const LiveBookingForm: React.FC<LiveBookingFormProps> = ({
       >
         <PlusCircle className="w-4 h-4" />
         <span>
-          {submitting ? 'पोस्ट हो रहा है...' : 'लाइव रिक्वेस्ट भेजें (तुरंत बुलाएं)'}
+          {submitting ? 'Sending Request...' : 'Send Instant Request'}
         </span>
       </button>
     </form>
@@ -491,7 +492,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
 
   const handleToggleDuty = async () => {
     if (!currentUser || !isValidIndianMobile(currentUser.phone)) {
-      onNotify('Duty ON करने के लिए पहले अपना मोबाइल नंबर जोड़ें', true);
+      onNotify('Please join with your mobile number first to turn Duty ON', true);
       onGoToAccount();
       return;
     }
@@ -509,12 +510,12 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
       });
       onNotify(
         nextOnline
-          ? 'Duty ON हो गई! अब आपको लाइव काम की रिक्वेस्ट दिखेंगी।'
-          : 'आपकी Duty अब Offline है।',
+          ? 'Duty ON! You are now online and can see live work requests.'
+          : 'You are now Offline (Duty OFF).',
       );
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'Duty स्थिति बदलने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to update Duty status',
         true,
       );
     } finally {
@@ -524,7 +525,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
 
   const handleAcceptRequest = async (req: LiveRequest) => {
     if (!currentUser || !isValidIndianMobile(currentUser.phone)) {
-      onNotify('काम लेने के लिए पहले मोबाइल नंबर से जुड़ें', true);
+      onNotify('Please join with your mobile number first to accept jobs', true);
       onGoToAccount();
       return;
     }
@@ -536,10 +537,10 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
         user: { name: currentUser.name, phone: currentUser.phone },
         workerProfile: myWorkerProfile,
       });
-      onNotify('बधाई हो! काम कन्फर्म हो गया — अब ठेकेदार को सीधे कॉल या मैसेज करें।');
+      onNotify('Job Confirmed! Call or message the contractor directly.');
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'काम Accept करने में समस्या हुई',
+        err instanceof Error ? err.message : 'Unable to accept this job',
         true,
       );
     } finally {
@@ -566,7 +567,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
       setCustomChatText((prev) => ({ ...prev, [requestId]: '' }));
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'मैसेज भेजने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to send message',
         true,
       );
     } finally {
@@ -577,10 +578,10 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
   const handleCloseRequest = async (requestId: string) => {
     try {
       await closeLiveRequest(requestId);
-      onNotify('रिक्वेस्ट बंद कर दी गई है।');
+      onNotify('Live request closed.');
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'रिक्वेस्ट बंद करने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to close request',
         true,
       );
     }
@@ -588,9 +589,10 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
 
   const shareLiveRequestOnWhatsApp = (req: LiveRequest) => {
     const facilities = formatFacilitiesText(req.facilities);
-    const text = `Kaam Connect पर तुरंत काम:\nकाम: ${req.skill}\nरेट: ₹${req.dailyRate}/दिन\nसंख्या: ${req.requiredCount} मजदूर\nजगह: ${req.city}, ${req.state}${
+    const appLink = getAppShareLink();
+    const text = `Urgent Work on Kaam Connect:\nTrade / Skill: ${req.skill}\nDaily Wage: ₹${req.dailyRate}/day\nWorkers Needed: ${req.requiredCount}\nLocation: ${req.city}, ${req.state}${
       req.siteAddress ? ` (${req.siteAddress})` : ''
-    }${facilities ? `\nसुविधाएं: ${facilities}` : ''}\nठेकेदार: ${req.contractorName} (+91 ${req.contractorPhone})\nबिना बिचौलिए के सीधे कॉल करें!`;
+    }${facilities ? `\nFacilities: ${facilities}` : ''}\nContractor: ${req.contractorName} (+91 ${req.contractorPhone})\nApply directly — No Middleman: ${appLink}`;
     window.open(buildWhatsAppShareUrl(text), '_blank', 'noopener,noreferrer');
   };
 
@@ -600,7 +602,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div
           role="tablist"
-          aria-label="मोड चुनें"
+          aria-label="Select Role Mode"
           className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl"
         >
           <button
@@ -608,26 +610,26 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
             role="tab"
             aria-selected={roleMode === 'worker'}
             onClick={() => setRoleMode('worker')}
-            className={`min-h-[44px] rounded-lg px-3 py-2 text-xs sm:text-sm font-bold transition-colors whitespace-nowrap ${
+            className={`min-h-[44px] rounded-lg px-2 sm:px-3 py-2 text-[11px] sm:text-sm font-bold transition-colors whitespace-nowrap truncate ${
               roleMode === 'worker'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            मजदूर हैं (काम लें)
+            Worker (Find Work)
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={roleMode === 'contractor'}
             onClick={() => setRoleMode('contractor')}
-            className={`min-h-[44px] rounded-lg px-3 py-2 text-xs sm:text-sm font-bold transition-colors whitespace-nowrap ${
+            className={`min-h-[44px] rounded-lg px-2 sm:px-3 py-2 text-[11px] sm:text-sm font-bold transition-colors whitespace-nowrap truncate ${
               roleMode === 'contractor'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            ठेकेदार हैं (मजदूर बुलाएं)
+            Contractor (Hire Workers)
           </button>
         </div>
 
@@ -642,7 +644,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              मेरे शहर में
+              My City
             </button>
             <button
               type="button"
@@ -653,12 +655,12 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              पूरे India में (All India)
+              All India
             </button>
           </div>
 
           <span className="text-xs font-semibold text-slate-600 tabular-nums px-1">
-            Online कारीगर: <strong className="text-emerald-700">{onlineWorkersCount}</strong>
+            Online Workers: <strong className="text-emerald-700">{onlineWorkersCount}</strong>
           </span>
         </div>
       </div>
@@ -681,14 +683,14 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                   }`}
                 >
                   {isDutyOn
-                    ? 'Duty ON — आप काम के लिए Online हैं'
-                    : 'Duty OFF — काम लेने के लिए Duty ON करें'}
+                    ? 'Duty ON / Online (Available for Work)'
+                    : 'Duty OFF — Turn Duty ON to receive live jobs'}
                 </span>
               </div>
               <p className="text-xs text-slate-600">
                 {currentUser
-                  ? `${currentUser.name} · ${currentUser.phone} · बिना अलग प्रोफाइल भरे भी आप तुरंत काम Accept कर सकते हैं`
-                  : 'पहले अपने नाम और 10 अंकों के मोबाइल नंबर से जुड़ें'}
+                  ? `${currentUser.name} · ${currentUser.phone} · You can accept live jobs immediately even without a separate profile`
+                  : 'Join with your name and 10-digit mobile number first'}
               </p>
             </div>
 
@@ -705,10 +707,10 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
               <Power className="w-4 h-4" />
               <span>
                 {togglingDuty
-                  ? 'अपडेट हो रहा है...'
+                  ? 'Updating...'
                   : isDutyOn
-                  ? 'Duty ON (Online) · बंद करें'
-                  : 'Duty ON / Online करें'}
+                  ? 'Duty ON / Online (Turn OFF)'
+                  : 'Duty ON / Online (Available for Work)'}
               </span>
             </button>
           </div>
@@ -716,10 +718,10 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
           {!isDutyOn ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center space-y-3">
               <h3 className="text-base font-bold text-slate-900">
-                लाइव बुकिंग देखने के लिए Duty ON करें
+                Turn Duty ON to View Live Bookings
               </h3>
               <p className="text-sm text-slate-600 max-w-md mx-auto">
-                जैसे ही आप Duty ON करेंगे, आपके क्षेत्र ({selectedCity.split('(')[0].trim()}) और पूरे India की नई लाइव रिक्वेस्ट यहाँ दिखेंगी।
+                Once you turn Duty ON, live contractor requests in {selectedCity} and across India will appear here automatically.
               </p>
               <button
                 type="button"
@@ -727,16 +729,16 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                 className="min-h-[46px] px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold inline-flex items-center gap-2"
               >
                 <Power className="w-4 h-4" />
-                <span>अभी Duty ON करें</span>
+                <span>Go Online (Duty ON)</span>
               </button>
             </div>
           ) : activeLiveRequests.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center space-y-2">
               <h3 className="text-base font-bold text-slate-900">
-                अभी कोई सक्रिय लाइव रिक्वेस्ट नहीं है
+                No Active Live Requests Right Now
               </h3>
               <p className="text-sm text-slate-600">
-                पिछले 6 घंटों में कोई नई लाइव रिक्वेस्ट नहीं मिली। आप "पूरे India में (All India)" फ़िल्टर या "काम खोजें" टैब भी देख सकते हैं।
+                No live requests found in the last 6 hours for this filter. Try switching to &quot;All India&quot; or check the &quot;Find Work&quot; tab.
               </p>
             </div>
           ) : (
@@ -765,7 +767,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                             {req.skill}
                           </h3>
                           <p className="text-xs text-slate-600 mt-1">
-                            {req.contractorName} · {formatRelativeTimeHindi(req.createdAt, now)}
+                            {req.contractorName} · {formatRelativeTime(req.createdAt, now)}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -773,7 +775,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                             ₹{req.dailyRate}
                           </div>
                           <div className="text-[11px] font-medium text-slate-500">
-                            प्रति दिन
+                            ₹/day
                           </div>
                         </div>
                       </div>
@@ -789,7 +791,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                         <div className="flex items-center gap-1.5 tabular-nums">
                           <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span>
-                            जरूरत: <strong>{req.requiredCount}</strong> मजदूर · कन्फर्म हुए:{' '}
+                            Needed: <strong>{req.requiredCount}</strong> · Confirmed:{' '}
                             <strong>
                               {req.confirmedCount} / {req.requiredCount}
                             </strong>
@@ -797,7 +799,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                         </div>
                         {facilitiesText && (
                           <div className="text-emerald-800 font-semibold pt-0.5">
-                            सुविधाएं: {facilitiesText}
+                            Facilities: {facilitiesText}
                           </div>
                         )}
                       </div>
@@ -809,7 +811,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
                             <CheckCircle2 className="w-4 h-4 shrink-0" />
-                            <span>काम कन्फर्म! ठेकेदार से सीधे संपर्क करें</span>
+                            <span>✅ Job Confirmed! Contact contractor directly</span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
@@ -818,12 +820,12 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5"
                             >
                               <Phone className="w-4 h-4" />
-                              <span>सीधे कॉल करें</span>
+                              <span>Call Now</span>
                             </a>
                             <a
                               href={buildDirectWhatsAppUrl(
                                 req.contractorPhone,
-                                `नमस्ते ${req.contractorName} जी, मैंने Kaam Connect पर आपकी "${req.skill}" वाली लाइव रिक्वेस्ट Accept की है।`,
+                                `Hello ${req.contractorName}, I accepted your "${req.skill}" live request on Kaam Connect.`,
                               )}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -837,7 +839,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                           {/* In-App 1-Tap Quick Chat */}
                           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5">
                             <span className="block text-xs font-bold text-slate-800">
-                              1-Tap Quick Chat (ठेकेदार को तुरंत भेजें)
+                              Quick Chat (1-Tap Message to Contractor)
                             </span>
                             <div className="flex flex-wrap gap-1.5">
                               {WORKER_QUICK_CHATS.map((msgText) => (
@@ -848,7 +850,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                   onClick={() =>
                                     handleQuickChat(req.id, msgText, 'worker')
                                   }
-                                  className="min-h-[36px] rounded-lg border border-slate-300 bg-white hover:bg-orange-50 hover:border-orange-300 px-2.5 py-1 text-xs font-medium text-slate-800 transition-colors"
+                                  className="min-h-[36px] rounded-lg border border-slate-300 bg-white hover:bg-orange-50 hover:border-orange-300 px-2.5 py-1 text-xs font-medium text-slate-800 transition-colors text-left"
                                 >
                                   {msgText}
                                 </button>
@@ -874,7 +876,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                             <div className="flex gap-1.5">
                               <input
                                 type="text"
-                                aria-label="खुद का संदेश लिखें"
+                                aria-label="Write custom message"
                                 value={customChatText[req.id] || ''}
                                 onChange={(e) =>
                                   setCustomChatText((prev) => ({
@@ -882,12 +884,12 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                     [req.id]: e.target.value,
                                   }))
                                 }
-                                placeholder="अन्य संदेश लिखें..."
+                                placeholder="Write a message..."
                                 className="flex-1 min-h-[38px] rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900"
                               />
                               <button
                                 type="button"
-                                aria-label="संदेश भेजें"
+                                aria-label="Send message"
                                 onClick={() =>
                                   handleQuickChat(
                                     req.id,
@@ -910,7 +912,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               disabled
                               className="w-full min-h-[44px] rounded-xl bg-slate-100 text-slate-500 border border-slate-200 text-xs font-bold cursor-not-allowed"
                             >
-                              यह आपकी अपनी रिक्वेस्ट है
+                              This is your own request
                             </button>
                           ) : isFull ? (
                             <button
@@ -918,7 +920,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               disabled
                               className="w-full min-h-[44px] rounded-xl bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold cursor-not-allowed"
                             >
-                              सभी मजदूर पूरे हो चुके हैं
+                              All required workers have been confirmed
                             </button>
                           ) : (
                             <div className="flex gap-2">
@@ -929,8 +931,8 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                 className="flex-1 min-h-[46px] rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-sm font-bold transition-colors"
                               >
                                 {acceptingId === req.id
-                                  ? 'कन्फर्म हो रहा है...'
-                                  : 'Accept करें (काम लें)'}
+                                  ? 'Confirming...'
+                                  : 'Accept Job'}
                               </button>
                               <button
                                 type="button"
@@ -939,7 +941,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                 }
                                 className="min-h-[46px] px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold"
                               >
-                                छोड़ें
+                                Skip
                               </button>
                             </div>
                           )}
@@ -953,7 +955,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                           className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center gap-1.5"
                         >
                           <Share2 className="w-3.5 h-3.5" />
-                          <span>WhatsApp पर Share करें</span>
+                          <span>Share on WhatsApp</span>
                         </button>
                         <button
                           type="button"
@@ -968,7 +970,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                           className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 inline-flex items-center gap-1"
                         >
                           <Flag className="w-3.5 h-3.5" />
-                          <span>रिपोर्ट</span>
+                          <span>Report</span>
                         </button>
                       </div>
                     </div>
@@ -995,16 +997,16 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-slate-900">
-                  मेरी लाइव बुकिंग स्थिति
+                  My Live Booking Status
                 </h3>
                 <span className="text-xs font-semibold text-emerald-700 tabular-nums">
-                  {onlineWorkersCount} कारीगर Online
+                  {onlineWorkersCount} Workers Online
                 </span>
               </div>
 
               {myContractorRequests.length === 0 ? (
                 <p className="text-xs text-slate-600 py-3">
-                  आपने अभी कोई सक्रिय लाइव रिक्वेस्ट नहीं डाली है। बाईं ओर फॉर्म भरकर तुरंत मजदूर बुलाएं।
+                  You have no active live requests right now. Fill out the form to hire workers instantly.
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -1021,7 +1023,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                           <div className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
                             <span>
-                              {formatRelativeTimeHindi(req.createdAt, now)} · ₹{req.dailyRate}/दिन
+                              {formatRelativeTime(req.createdAt, now)} · ₹{req.dailyRate}/day
                             </span>
                           </div>
                         </div>
@@ -1032,13 +1034,13 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               : 'bg-slate-200 text-slate-700'
                           }`}
                         >
-                          {req.status === 'open' ? 'चालू है' : 'बंद'}
+                          {req.status === 'open' ? 'Open' : 'Closed'}
                         </span>
                       </div>
 
                       <div className="bg-white border border-slate-200 rounded-xl p-3">
                         <div className="text-sm font-extrabold text-slate-900 tabular-nums">
-                          {req.confirmedCount} / {req.requiredCount} मजदूर कन्फर्म हुए
+                          {req.confirmedCount} / {req.requiredCount} Workers Confirmed
                         </div>
                         <div className="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                           <div
@@ -1059,7 +1061,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                       {req.acceptedWorkers.length > 0 ? (
                         <div className="space-y-2">
                           <span className="block text-xs font-bold text-slate-700">
-                            जुड़े हुए कारीगर:
+                            Confirmed Workers:
                           </span>
                           {req.acceptedWorkers.map((worker, idx) => (
                             <div
@@ -1084,12 +1086,12 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                   className="flex-1 min-h-[38px] rounded-lg bg-emerald-600 text-white text-xs font-bold inline-flex items-center justify-center gap-1"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
-                                  <span>Call</span>
+                                  <span>Call Now</span>
                                 </a>
                                 <a
                                   href={buildDirectWhatsAppUrl(
                                     worker.phone,
-                                    `नमस्ते ${worker.name} जी, आपकी "${req.skill}" वाली Kaam Connect बुकिंग कन्फर्म है।`,
+                                    `Hello ${worker.name}, your "${req.skill}" booking on Kaam Connect is confirmed.`,
                                   )}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -1104,7 +1106,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                         </div>
                       ) : (
                         <p className="text-xs text-slate-600">
-                          अभी कारीगरों के Accept करने का इंतज़ार है...
+                          Waiting for workers to accept...
                         </p>
                       )}
 
@@ -1119,7 +1121,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                                 onClick={() =>
                                   handleQuickChat(req.id, msg, 'contractor')
                                 }
-                                className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-800 hover:bg-orange-50"
+                                className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-800 hover:bg-orange-50 text-left"
                               >
                                 {msg}
                               </button>
@@ -1147,7 +1149,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               className="flex-1 min-h-[42px] rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700 inline-flex items-center justify-center gap-1.5"
                             >
                               <Share2 className="w-3.5 h-3.5" />
-                              <span>Share करें</span>
+                              <span>Share on WhatsApp</span>
                             </button>
                             <button
                               type="button"
@@ -1155,7 +1157,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                               className="flex-1 min-h-[42px] rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white inline-flex items-center justify-center gap-1.5"
                             >
                               <XCircle className="w-3.5 h-3.5" />
-                              <span>Request बंद करें</span>
+                              <span>Close Request</span>
                             </button>
                           </div>
                         </div>

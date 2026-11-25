@@ -49,6 +49,18 @@ function tokenizeCity(city: string): string[] {
     .filter((t) => t.length >= 2);
 }
 
+export function cleanCityLabel(city: string): string {
+  const raw = String(city || '').trim();
+  const parenMatch = raw.match(/\(([^)]+)\)/);
+  if (parenMatch && /[\u0900-\u097F]/.test(raw)) {
+    return parenMatch[1].trim();
+  }
+  if (/[\u0900-\u097F]/.test(raw)) {
+    return 'Rourkela';
+  }
+  return raw;
+}
+
 export function matchesLocationFilter(
   itemState: string,
   itemCity: string,
@@ -119,7 +131,7 @@ export function canWorkerAcceptRequest(
     return {
       allowed: false,
       isOwnRequest: true,
-      reason: 'यह आपकी अपनी रिक्वेस्ट है',
+      reason: 'This is your own request',
     };
   }
 
@@ -127,21 +139,21 @@ export function canWorkerAcceptRequest(
     return {
       allowed: false,
       alreadyAccepted: true,
-      reason: 'आपने यह काम Accept कर लिया है',
+      reason: 'You have already accepted this job',
     };
   }
 
   if (request.status !== 'open') {
     return {
       allowed: false,
-      reason: 'यह रिक्वेस्ट बंद हो चुकी है',
+      reason: 'This request is closed',
     };
   }
 
   if (!isWithinHours(request.createdAt, LIVE_REQUEST_MAX_AGE_HOURS, now)) {
     return {
       allowed: false,
-      reason: 'यह रिक्वेस्ट 6 घंटे से पुरानी है',
+      reason: 'This request is older than 6 hours',
     };
   }
 
@@ -151,14 +163,14 @@ export function canWorkerAcceptRequest(
     return {
       allowed: false,
       isFull: true,
-      reason: 'सभी मजदूर पूरे हो चुके हैं',
+      reason: 'All required workers have been confirmed',
     };
   }
 
   if (!isValidIndianMobile(cleanUserPhone)) {
     return {
       allowed: false,
-      reason: 'काम लेने के लिए पहले मोबाइल नंबर से जुड़ें',
+      reason: 'Please join with your mobile number first to accept jobs',
     };
   }
 
@@ -175,10 +187,10 @@ export function computeAcceptTransactionUpdate(
   const fallbackSkill =
     (workerProfile?.skill && workerProfile.skill.trim()) ||
     (request.skill && request.skill.trim()) ||
-    'सामान्य मजदूर';
+    'Helper / Labour';
 
   const newEntry: AcceptedWorkerEntry = sanitizeForFirestore({
-    name: (user.name || 'कारीगर').trim(),
+    name: (user.name || 'Worker').trim(),
     phone: cleanPhone,
     skill: fallbackSkill,
     acceptedAt: now,
@@ -221,23 +233,64 @@ export function buildWhatsAppShareUrl(message: string): string {
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 
+export const LIVE_CLOUD_RUN_URL =
+  'https://ais-pre-dka5gnxodntfhzxn7g7fyv-915210984650.asia-northeast1.run.app';
+
+export function getAppShareLink(): string {
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.origin &&
+    !window.location.origin.includes('localhost') &&
+    !window.location.origin.startsWith('capacitor:')
+  ) {
+    return window.location.origin;
+  }
+  return LIVE_CLOUD_RUN_URL;
+}
+
+export function buildShareAppText(appUrl: string = LIVE_CLOUD_RUN_URL): string {
+  return `Kaam Connect — Sidha Kaam, Sidha Sampark (100% Free)! Welder, Fitter, Rigger, Gas Cutter, Rajmistri aur Helper ke liye bina commission kaam payein ya bulayein. Abhi kholein: ${appUrl}`;
+}
+
+export async function shareKaamConnectApp(): Promise<'shared' | 'whatsapp' | 'cancelled'> {
+  const shareText = buildShareAppText(LIVE_CLOUD_RUN_URL);
+
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({
+        title: 'Kaam Connect',
+        text: shareText,
+      });
+      return 'shared';
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return 'cancelled';
+      }
+      // Fall back to WhatsApp if navigator.share is blocked or unsupported
+    }
+  }
+
+  window.open(buildWhatsAppShareUrl(shareText), '_blank', 'noopener,noreferrer');
+  return 'whatsapp';
+}
+
 export function formatFacilitiesText(facilities?: FacilityFlags): string {
   if (!facilities) return '';
   const list: string[] = [];
-  if (facilities.stayFree) list.push('रहना Free');
-  if (facilities.foodFree) list.push('खाना Free');
-  if (facilities.travelAllowance) list.push('आने-जाने का किराया');
+  if (facilities.stayFree) list.push('Free Stay');
+  if (facilities.foodFree) list.push('Free Food');
+  if (facilities.travelAllowance) list.push('Travel Allowance');
   return list.join(' · ');
 }
 
-export function formatRelativeTimeHindi(timestamp: number, now: number = Date.now()): string {
-  if (!timestamp || !Number.isFinite(timestamp)) return 'अभी';
+export function formatRelativeTime(timestamp: number, now: number = Date.now()): string {
+  if (!timestamp || !Number.isFinite(timestamp)) return 'Just now';
   const diffSec = Math.max(0, Math.floor((now - timestamp) / 1000));
-  if (diffSec < 60) return 'अभी';
+  if (diffSec < 60) return 'Just now';
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} मिनट पहले`;
+  if (diffMin < 60) return `${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr} घंटे पहले`;
+  if (diffHr < 24) return `${diffHr}h ago`;
   const diffDay = Math.floor(diffHr / 24);
-  return `${diffDay} दिन पहले`;
+  return `${diffDay}d ago`;
 }

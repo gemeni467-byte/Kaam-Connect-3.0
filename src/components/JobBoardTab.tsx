@@ -28,7 +28,8 @@ import {
   buildTelUrl,
   buildWhatsAppShareUrl,
   formatFacilitiesText,
-  formatRelativeTimeHindi,
+  formatRelativeTime,
+  getAppShareLink,
   isValidIndianMobile,
   isWithinHours,
   matchesLocationFilter,
@@ -113,15 +114,15 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
     const cleanPhone = normalizePhone(form.contractorPhone);
 
     if (!form.contractorName.trim()) {
-      onNotify('ठेकेदार का नाम लिखें', true);
+      onNotify('Please enter contractor or company name', true);
       return;
     }
     if (!isValidIndianMobile(cleanPhone)) {
-      onNotify('सही 10 अंकों का मोबाइल नंबर लिखें', true);
+      onNotify('Please enter a valid 10-digit mobile number', true);
       return;
     }
     if (!skill) {
-      onNotify('कृपया काम (Skill) लिखें', true);
+      onNotify('Please select or enter a skill / trade', true);
       return;
     }
 
@@ -139,7 +140,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
         description: form.description.trim(),
         facilities: form.facilities,
       });
-      onNotify('काम की पोस्ट सफलतापूर्वक जुड़ गई!');
+      onNotify('Job published successfully!');
       setForm((prev) => ({
         ...prev,
         siteAddress: '',
@@ -149,7 +150,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
       onSuccess();
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'पोस्ट करने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to publish job',
         true,
       );
     } finally {
@@ -164,12 +165,12 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
     >
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <h3 className="text-base font-bold text-slate-900">
-          नया काम पोस्ट करें (Job Board)
+          Post a Regular Job
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          aria-label="फॉर्म बंद करें"
+          aria-label="Close job form"
           className="min-h-[40px] min-w-[40px] rounded-xl text-slate-500 hover:bg-slate-100 flex items-center justify-center"
         >
           <X className="w-5 h-5" />
@@ -182,7 +183,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-contractor-name"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            ठेकेदार / कंपनी का नाम <span className="text-orange-600">*</span>
+            Contractor / Company Name <span className="text-orange-600">*</span>
           </label>
           <input
             id="job-contractor-name"
@@ -191,7 +192,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             onChange={(e) =>
               setForm((prev) => ({ ...prev, contractorName: e.target.value }))
             }
-            placeholder="जैसे: जय अंबे कंस्ट्रक्शन"
+            placeholder="e.g. Jai Ambe Construction"
             className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
             required
           />
@@ -202,7 +203,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-contractor-phone"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            10 अंकों का मोबाइल नंबर <span className="text-orange-600">*</span>
+            10-Digit Mobile Number <span className="text-orange-600">*</span>
           </label>
           <input
             id="job-contractor-phone"
@@ -225,7 +226,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
 
       <SkillSelectField
         id="job-skill-select"
-        label="काम का प्रकार (Skill)"
+        label="Skill / Trade Required"
         selectedSkill={form.selectedSkill}
         customSkill={form.customSkill}
         onSelectSkill={(val) =>
@@ -243,7 +244,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-workers-needed"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            कितने मजदूर
+            Workers Needed
           </label>
           <input
             id="job-workers-needed"
@@ -263,7 +264,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-daily-rate"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            दैनिक मजदूरी (₹)
+            Daily Wage (₹/day)
           </label>
           <input
             id="job-daily-rate"
@@ -283,7 +284,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-state-select"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            राज्य (State)
+            State
           </label>
           <select
             id="job-state-select"
@@ -311,7 +312,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
             htmlFor="job-city-input"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            शहर / साइट क्षेत्र
+            City / Site Area
           </label>
           <input
             id="job-city-input"
@@ -337,7 +338,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
           htmlFor="job-site-address"
           className="block text-sm font-semibold text-slate-800 mb-1"
         >
-          साइट का पता (वैकल्पिक)
+          Site Address (Optional)
         </label>
         <input
           id="job-site-address"
@@ -346,7 +347,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
           onChange={(e) =>
             setForm((prev) => ({ ...prev, siteAddress: e.target.value }))
           }
-          placeholder="जैसे: इंडस्ट्रियल एस्टेट फेज 2"
+          placeholder="e.g. Industrial Estate Phase 2"
           className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
         />
       </div>
@@ -356,7 +357,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
           htmlFor="job-description"
           className="block text-sm font-semibold text-slate-800 mb-1"
         >
-          काम का विवरण (वैकल्पिक)
+          Job Details (Optional)
         </label>
         <textarea
           id="job-description"
@@ -365,7 +366,7 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
           onChange={(e) =>
             setForm((prev) => ({ ...prev, description: e.target.value }))
           }
-          placeholder="जैसे: 3 महीने का प्लांट शटडाउन काम, ओवरटाइम अलग से मिलेगा"
+          placeholder="e.g. 3-month plant shutdown project, overtime paid extra"
           className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
         />
       </div>
@@ -381,14 +382,14 @@ const PostJobForm: React.FC<PostJobFormProps> = ({
           onClick={onCancel}
           className="flex-1 min-h-[46px] rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
         >
-          रद्द करें
+          Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
           className="flex-1 min-h-[46px] rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-sm font-bold text-white"
         >
-          {submitting ? 'पोस्ट हो रहा है...' : 'काम पोस्ट करें'}
+          {submitting ? 'Publishing...' : 'Publish Job'}
         </button>
       </div>
     </form>
@@ -444,9 +445,10 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
 
   const handleShareJob = (job: JobPost) => {
     const facilities = formatFacilitiesText(job.facilities);
-    const text = `Kaam Connect पर काम उपलब्ध है:\nकाम: ${job.skill}\nदैनिक रेट: ₹${job.dailyRate}/दिन\nजरूरत: ${job.workersNeeded} मजदूर\nस्थान: ${job.city}, ${job.state}${
+    const appLink = getAppShareLink();
+    const text = `Job Opening on Kaam Connect:\nTrade / Skill: ${job.skill}\nDaily Wage: ₹${job.dailyRate}/day\nWorkers Needed: ${job.workersNeeded}\nLocation: ${job.city}, ${job.state}${
       job.siteAddress ? ` (${job.siteAddress})` : ''
-    }${facilities ? `\nसुविधाएं: ${facilities}` : ''}\nसंपर्क: ${job.contractorName} (+91 ${job.contractorPhone})\nबिना बिचौलिए के सीधे संपर्क करें!`;
+    }${facilities ? `\nFacilities: ${facilities}` : ''}\nContact: ${job.contractorName} (+91 ${job.contractorPhone})\nDirect Contact — No Middleman: ${appLink}`;
     window.open(buildWhatsAppShareUrl(text), '_blank', 'noopener,noreferrer');
   };
 
@@ -465,7 +467,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              मेरे शहर में
+              My City
             </button>
             <button
               type="button"
@@ -476,7 +478,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              पूरे India में (All India)
+              All India
             </button>
           </div>
 
@@ -486,14 +488,14 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
             className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span>{showPostForm ? 'फॉर्म बंद करें' : 'नया काम पोस्ट करें'}</span>
+            <span>{showPostForm ? 'Close Form' : 'Post a Regular Job'}</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
           <SkillSelectField
             id="jobs-filter-skill"
-            label="काम के अनुसार फ़िल्टर करें"
+            label="Filter by Skill / Trade"
             selectedSkill={skillFilter}
             customSkill={customSkillFilter}
             onSelectSkill={setSkillFilter}
@@ -501,7 +503,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
             includeAllOption
           />
           <p className="text-xs text-slate-500 pb-2">
-            केवल पिछले 7 दिनों की ताज़ा जॉब पोस्ट दिख रही हैं ({visibleJobs.length} पोस्ट)
+            Showing active jobs from the last 7 days ({visibleJobs.length} listings)
           </p>
         </div>
       </div>
@@ -520,12 +522,12 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
       {visibleJobs.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
           <h3 className="text-base font-bold text-slate-900">
-            अभी इस फ़िल्टर में कोई काम पोस्ट नहीं है
+            No Job Posts Found for This Filter
           </h3>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
             {locationFilter === 'city'
-              ? 'आप "पूरे India में (All India)" चुनकर अन्य शहरों का काम देख सकते हैं या नया काम पोस्ट कर सकते हैं।'
-              : 'अभी कोई ताज़ा काम पोस्ट उपलब्ध नहीं है। ठेकेदार ऊपर बटन से तुरंत काम पोस्ट कर सकते हैं।'}
+              ? 'Switch to "All India" to browse jobs across the country, or post a new job above.'
+              : 'No recent job openings are listed yet. Contractors can publish a job above.'}
           </p>
           {locationFilter === 'city' && (
             <button
@@ -533,7 +535,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
               onClick={() => setLocationFilter('all_india')}
               className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800"
             >
-              पूरे India में देखें
+              View All India Jobs
             </button>
           )}
         </div>
@@ -553,7 +555,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                         {job.skill}
                       </h3>
                       <p className="text-xs text-slate-600 mt-1">
-                        {job.contractorName} · {formatRelativeTimeHindi(job.createdAt, now)}
+                        {job.contractorName} · {formatRelativeTime(job.createdAt, now)}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -561,7 +563,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                         ₹{job.dailyRate}
                       </div>
                       <div className="text-[11px] font-medium text-slate-500">
-                        प्रति दिन
+                        ₹/day
                       </div>
                     </div>
                   </div>
@@ -577,7 +579,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                     <div className="flex items-center gap-1.5 tabular-nums">
                       <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span>
-                        आवश्यकता: <strong>{job.workersNeeded}</strong> कारीगर / मजदूर
+                        Workers Needed: <strong>{job.workersNeeded}</strong>
                       </span>
                     </div>
                     {job.description && (
@@ -585,7 +587,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                     )}
                     {facilitiesText && (
                       <div className="text-emerald-800 font-semibold pt-0.5">
-                        सुविधाएं: {facilitiesText}
+                        Facilities: {facilitiesText}
                       </div>
                     )}
                   </div>
@@ -598,12 +600,12 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                       className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5"
                     >
                       <Phone className="w-4 h-4" />
-                      <span>सीधे कॉल करें</span>
+                      <span>Call Now</span>
                     </a>
                     <a
                       href={buildDirectWhatsAppUrl(
                         job.contractorPhone,
-                        `नमस्ते ${job.contractorName} जी, मैंने Kaam Connect पर आपकी "${job.skill}" की जॉब देखी है।`,
+                        `Hello ${job.contractorName}, I saw your "${job.skill}" job post on Kaam Connect.`,
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -621,7 +623,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                       className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center gap-1.5"
                     >
                       <Share2 className="w-3.5 h-3.5" />
-                      <span>WhatsApp पर Share करें</span>
+                      <span>Share on WhatsApp</span>
                     </button>
                     <button
                       type="button"
@@ -636,7 +638,7 @@ export const JobBoardTab: React.FC<JobBoardTabProps> = ({
                       className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 inline-flex items-center gap-1"
                     >
                       <Flag className="w-3.5 h-3.5" />
-                      <span>शिकायत / फ्रॉड रिपोर्ट</span>
+                      <span>Report</span>
                     </button>
                   </div>
                 </div>

@@ -46,13 +46,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         reason: form.reason,
         details: form.details,
         reporterPhone: currentUser?.phone || '0000000000',
-        reporterName: currentUser?.name || 'अतिथि यूज़र',
+        reporterName: currentUser?.name || 'Guest User',
       });
       setForm({ reason: REPORT_REASONS[0], details: '' });
-      onSuccess('आपकी शिकायत दर्ज कर ली गई है। धन्यवाद!');
+      onSuccess('Your report has been submitted. Thank you!');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'शिकायत भेजने में समस्या हुई');
+      setError(err instanceof Error ? err.message : 'Failed to submit report');
     } finally {
       setSubmitting(false);
     }
@@ -70,13 +70,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           <div className="flex items-center gap-2 text-rose-800">
             <Flag className="w-5 h-5" />
             <h2 id="report-modal-title" className="text-base font-bold">
-              शिकायत / फ्रॉड रिपोर्ट
+              Report Fraud / Fake Listing
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="रिपोर्ट बंद करें"
+            aria-label="Close report modal"
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-rose-700 hover:bg-rose-100"
           >
             <X className="w-5 h-5" />
@@ -95,7 +95,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               htmlFor="report-reason-select"
               className="block text-sm font-semibold text-slate-800 mb-1.5"
             >
-              शिकायत का कारण
+              Reason for Report
             </label>
             <select
               id="report-reason-select"
@@ -118,7 +118,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               htmlFor="report-details-input"
               className="block text-sm font-semibold text-slate-800 mb-1.5"
             >
-              पूरी बात लिखें (वैकल्पिक)
+              Additional Details (Optional)
             </label>
             <textarea
               id="report-details-input"
@@ -127,7 +127,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, details: e.target.value }))
               }
-              placeholder="क्या समस्या आई, यहाँ लिखें..."
+              placeholder="Describe what happened..."
               className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-rose-500 focus:outline-none"
             />
           </div>
@@ -144,7 +144,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               onClick={onClose}
               className="flex-1 min-h-[46px] rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
             >
-              रद्द करें
+              Cancel
             </button>
             <button
               type="submit"
@@ -152,7 +152,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               className="flex-1 min-h-[46px] rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-sm font-bold text-white inline-flex items-center justify-center gap-1.5"
             >
               <Send className="w-4 h-4" />
-              <span>{submitting ? 'भेजा जा रहा है...' : 'रिपोर्ट भेजें'}</span>
+              <span>{submitting ? 'Submitting...' : 'Submit Report'}</span>
             </button>
           </div>
         </form>

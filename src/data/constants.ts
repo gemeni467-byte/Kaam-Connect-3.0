@@ -1,19 +1,17 @@
-export const CUSTOM_SKILL_OPTION = 'अन्य (खुद लिखें)';
+export const CUSTOM_SKILL_OPTION = 'Other (Write Your Own)';
 
 export const SKILLS_LIST: string[] = [
-  'सामान्य मजदूर (Helper)',
-  'वेल्डर (Welder - Arc / MIG / TIG)',
-  'फिटर (Pipe / Structural Fitter)',
-  'रिगर (Rigger)',
-  'गैस कटर (Gas Cutter)',
-  'राजमिस्त्री (Mason)',
-  'शटरिंग कारपेंटर (Shuttering Carpenter)',
-  'सरिया बांधने वाला (Bar Bender)',
-  'इलेक्ट्रीशियन (Electrician)',
-  'प्लंबर (Plumber)',
-  'पेंटर / पुट्टी (Painter)',
-  'टाइल / मार्बल मिस्त्री (Tile Mason)',
-  'क्रेन / जेसीबी ऑपरेटर (Operator)',
+  'MIG Welder',
+  'Arc Welder',
+  'Pipe / Structure Fitter',
+  'Gas Cutter',
+  'Rigger',
+  'Mason (Rajmistri)',
+  'Electrician',
+  'Plumber',
+  'Carpenter',
+  'Painter',
+  'Helper / Labour',
   CUSTOM_SKILL_OPTION,
 ];
 
@@ -36,38 +34,38 @@ export const INDIA_STATES: string[] = [
 ];
 
 export const DEFAULT_STATE = 'Odisha';
-export const DEFAULT_CITY = 'राउरकेला (Rourkela)';
+export const DEFAULT_CITY = 'Rourkela';
 
 export const QUICK_CITIES_BY_STATE: Record<string, string[]> = {
-  Odisha: ['राउरकेला (Rourkela)', 'अंगुल (Angul)', 'झारसुगुडा (Jharsuguda)', 'भुवनेश्वर (Bhubaneswar)', 'कटक (Cuttack)', 'संबलपुर (Sambalpur)'],
-  Bihar: ['बिहार शरीफ (Bihar Sharif)', 'पटना (Patna)', 'गया (Gaya)', 'मुजफ्फरपुर (Muzaffarpur)', 'बेगूसराय (Begusarai)'],
-  Jharkhand: ['जमशेदपुर (Jamshedpur)', 'बोकारो (Bokaro)', 'रांची (Ranchi)', 'धनबाद (Dhanbad)'],
-  'Uttar Pradesh': ['लखनऊ (Lucknow)', 'कानपुर (Kanpur)', 'वाराणसी (Varanasi)', 'नोएडा (Noida)', 'प्रयागराज (Prayagraj)'],
-  Chhattisgarh: ['रायपुर (Raipur)', 'भिलाई (Bhilai)', 'कोरबा (Korba)', 'बिलासपुर (Bilaspur)'],
-  'West Bengal': ['कोलकाता (Kolkata)', 'दुर्गापुर (Durgapur)', 'हल्दिया (Haldia)', 'आसनसोल (Asansol)'],
-  Maharashtra: ['मुंबई (Mumbai)', 'पुणे (Pune)', 'नागपुर (Nagpur)', 'ठाणे (Thane)'],
-  Gujarat: ['सूरत (Surat)', 'अहमदाबाद (Ahmedabad)', 'जामनगर (Jamnagar)', 'वडोदरा (Vadodara)'],
-  'Delhi NCR': ['नई दिल्ली (New Delhi)', 'गुड़गांव (Gurugram)', 'फरीदाबाद (Faridabad)', 'गाजियाबाद (Ghaziabad)'],
-  'Tamil Nadu': ['चेन्नई (Chennai)', 'कोयंबटूर (Coimbatore)', 'होसूर (Hosur)'],
-  Karnataka: ['बेंगलुरु (Bengaluru)', 'हुबली (Hubballi)', 'मंगलुरु (Mangaluru)'],
-  Telangana: ['हैदराबाद (Hyderabad)', 'वारंगल (Warangal)'],
-  Rajasthan: ['जयपुर (Jaipur)', 'भिवाड़ी (Bhiwadi)', 'उदयपुर (Udaipur)'],
-  'Madhya Pradesh': ['इंदौर (Indore)', 'भोपाल (Bhopal)', 'सिंगरौली (Singrauli)'],
-  Other: ['अन्य शहर (Custom City)'],
+  Odisha: ['Rourkela', 'Angul', 'Jharsuguda', 'Bhubaneswar', 'Cuttack', 'Sambalpur'],
+  Bihar: ['Bihar Sharif', 'Patna', 'Gaya', 'Muzaffarpur', 'Begusarai'],
+  Jharkhand: ['Jamshedpur', 'Bokaro', 'Ranchi', 'Dhanbad'],
+  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Varanasi', 'Noida', 'Prayagraj'],
+  Chhattisgarh: ['Raipur', 'Bhilai', 'Korba', 'Bilaspur'],
+  'West Bengal': ['Kolkata', 'Durgapur', 'Haldia', 'Asansol'],
+  Maharashtra: ['Mumbai', 'Pune', 'Nagpur', 'Thane'],
+  Gujarat: ['Surat', 'Ahmedabad', 'Jamnagar', 'Vadodara'],
+  'Delhi NCR': ['New Delhi', 'Gurugram', 'Faridabad', 'Ghaziabad'],
+  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Hosur'],
+  Karnataka: ['Bengaluru', 'Hubballi', 'Mangaluru'],
+  Telangana: ['Hyderabad', 'Warangal'],
+  Rajasthan: ['Jaipur', 'Bhiwadi', 'Udaipur'],
+  'Madhya Pradesh': ['Indore', 'Bhopal', 'Singrauli'],
+  Other: ['Custom City'],
 };
 
 export const ALL_QUICK_CITY_SUGGESTIONS: Array<{ state: string; city: string }> = [
-  { state: 'Odisha', city: 'राउरकेला (Rourkela)' },
-  { state: 'Bihar', city: 'बिहार शरीफ (Bihar Sharif)' },
-  { state: 'Bihar', city: 'पटना (Patna)' },
-  { state: 'Jharkhand', city: 'जमशेदपुर (Jamshedpur)' },
-  { state: 'Jharkhand', city: 'बोकारो (Bokaro)' },
-  { state: 'Chhattisgarh', city: 'रायपुर (Raipur)' },
-  { state: 'Odisha', city: 'अंगुल (Angul)' },
-  { state: 'Odisha', city: 'झारसुगुडा (Jharsuguda)' },
-  { state: 'Gujarat', city: 'सूरत (Surat)' },
-  { state: 'Maharashtra', city: 'मुंबई (Mumbai)' },
-  { state: 'Maharashtra', city: 'पुणे (Pune)' },
+  { state: 'Odisha', city: 'Rourkela' },
+  { state: 'Bihar', city: 'Bihar Sharif' },
+  { state: 'Bihar', city: 'Patna' },
+  { state: 'Jharkhand', city: 'Jamshedpur' },
+  { state: 'Jharkhand', city: 'Bokaro' },
+  { state: 'Chhattisgarh', city: 'Raipur' },
+  { state: 'Odisha', city: 'Angul' },
+  { state: 'Odisha', city: 'Jharsuguda' },
+  { state: 'Gujarat', city: 'Surat' },
+  { state: 'Maharashtra', city: 'Mumbai' },
+  { state: 'Maharashtra', city: 'Pune' },
 ];
 
 export const WORKER_COUNT_PRESETS: Array<{ label: string; value: number }> = [
@@ -79,23 +77,24 @@ export const WORKER_COUNT_PRESETS: Array<{ label: string; value: number }> = [
 ];
 
 export const WORKER_QUICK_CHATS: string[] = [
-  'काम कब से शुरू है?',
-  'रहना-खाना मिलेगा?',
-  'मैं कल साइट पर पहुँच जाऊँगा',
+  'When does the work start?',
+  'Are food and stay provided?',
+  'I can reach the site tomorrow.',
+  'Please share the exact site location.',
 ];
 
 export const CONTRACTOR_QUICK_CHATS: string[] = [
-  'हाँ, कल सुबह 8 बजे आ जाएं',
-  'रहना-खाना फ्री मिलेगा',
-  'साइट पर आकर कॉल करें',
+  'Yes, please report at 8 AM tomorrow.',
+  'Free food and stay are available at site.',
+  'Please call when you reach the site gate.',
 ];
 
 export const REPORT_REASONS: string[] = [
-  'फर्जी काम / गलत जानकारी',
-  'ठेकेदार / व्यक्ति पैसे मांग रहा है (कमीशन/एडवांस)',
-  'फोन नंबर गलत या बंद है',
-  'मजदूरी बहुत कम या धोखाधड़ी',
-  'अन्य समस्या',
+  'Fake job or misleading details',
+  'Asking for money / advance / commission',
+  'Phone number is wrong or unreachable',
+  'Unfair wage or fraud',
+  'Other issue',
 ];
 
 export const LIVE_REQUEST_MAX_AGE_HOURS = 6;

@@ -57,13 +57,13 @@ export function subscribeWorkers(
           id: d.id,
           name: String(data.name || ''),
           phone: normalizePhone(String(data.phone || d.id)),
-          skill: String(data.skill || 'सामान्य मजदूर (Helper)'),
+          skill: String(data.skill || 'Helper / Labour'),
           workerType: data.workerType === 'team_leader' ? 'team_leader' : 'individual',
           teamSize: Number(data.teamSize || 1),
           outstationReady: Boolean(data.outstationReady),
           dailyRate: Number(data.dailyRate || 600),
           state: String(data.state || 'Odisha'),
-          city: String(data.city || 'राउरकेला (Rourkela)'),
+          city: String(data.city || 'Rourkela'),
           experienceYears: Number(data.experienceYears || 0),
           isOnline: Boolean(data.isOnline),
           updatedAt: Number(data.updatedAt || 0),
@@ -89,9 +89,9 @@ export function subscribeLiveRequests(
         const facilities = (data.facilities as Record<string, unknown>) || {};
         return {
           id: d.id,
-          contractorName: String(data.contractorName || 'ठेकेदार'),
+          contractorName: String(data.contractorName || 'Contractor'),
           contractorPhone: normalizePhone(String(data.contractorPhone || '')),
-          skill: String(data.skill || 'सामान्य मजदूर (Helper)'),
+          skill: String(data.skill || 'Helper / Labour'),
           requiredCount: Math.max(1, Number(data.requiredCount || 1)),
           confirmedCount: Math.max(0, Number(data.confirmedCount || 0)),
           dailyRate: Number(data.dailyRate || 0),
@@ -136,9 +136,9 @@ export function subscribeJobs(
         const facilities = (data.facilities as Record<string, unknown>) || {};
         return {
           id: d.id,
-          contractorName: String(data.contractorName || 'ठेकेदार'),
+          contractorName: String(data.contractorName || 'Contractor'),
           contractorPhone: normalizePhone(String(data.contractorPhone || '')),
-          skill: String(data.skill || 'सामान्य मजदूर (Helper)'),
+          skill: String(data.skill || 'Helper / Labour'),
           workersNeeded: Math.max(1, Number(data.workersNeeded || 1)),
           dailyRate: Number(data.dailyRate || 0),
           state: String(data.state || 'Odisha'),
@@ -170,7 +170,7 @@ export async function saveWorkerProfile(
   const payload = sanitizeForFirestore({
     name: profile.name.trim(),
     phone: cleanPhone,
-    skill: profile.skill.trim() || 'सामान्य मजदूर (Helper)',
+    skill: profile.skill.trim() || 'Helper / Labour',
     workerType: profile.workerType || 'individual',
     teamSize: profile.workerType === 'team_leader' ? Math.max(2, Number(profile.teamSize || 5)) : 1,
     outstationReady: Boolean(profile.outstationReady),
@@ -197,9 +197,9 @@ export async function setWorkerDutyStatus(params: {
   const cleanPhone = normalizePhone(params.phone);
   const now = Date.now();
   const payload = sanitizeForFirestore({
-    name: (params.existingProfile?.name || params.name || 'कारीगर').trim(),
+    name: (params.existingProfile?.name || params.name || 'Worker').trim(),
     phone: cleanPhone,
-    skill: params.existingProfile?.skill || 'सामान्य मजदूर (Helper)',
+    skill: params.existingProfile?.skill || 'Helper / Labour',
     workerType: params.existingProfile?.workerType || 'individual',
     teamSize: params.existingProfile?.teamSize || 1,
     outstationReady: params.existingProfile?.outstationReady ?? false,
@@ -257,14 +257,14 @@ export async function acceptLiveRequestTransaction(params: {
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(reqRef);
     if (!snap.exists()) {
-      throw new Error('यह लाइव रिक्वेस्ट अब मौजूद नहीं है');
+      throw new Error('This live request no longer exists');
     }
     const raw = snap.data() as Record<string, unknown>;
     const currentReq: LiveRequest = {
       id: snap.id,
       contractorName: String(raw.contractorName || ''),
       contractorPhone: normalizePhone(String(raw.contractorPhone || '')),
-      skill: String(raw.skill || 'सामान्य मजदूर'),
+      skill: String(raw.skill || 'Helper / Labour'),
       requiredCount: Math.max(1, Number(raw.requiredCount || 1)),
       confirmedCount: Math.max(0, Number(raw.confirmedCount || 0)),
       dailyRate: Number(raw.dailyRate || 0),
@@ -290,7 +290,7 @@ export async function acceptLiveRequestTransaction(params: {
 
     const eligibility = canWorkerAcceptRequest(currentReq, params.user.phone, Date.now());
     if (!eligibility.allowed) {
-      throw new Error(eligibility.reason || 'यह काम Accept नहीं किया जा सकता');
+      throw new Error(eligibility.reason || 'Unable to accept this job');
     }
 
     const nextUpdate = computeAcceptTransactionUpdate(
@@ -322,7 +322,7 @@ export async function sendQuickChatMessage(params: {
   const message: QuickChatMessage = sanitizeForFirestore({
     id: `${now}-${Math.random().toString(36).slice(2, 7)}`,
     senderPhone: normalizePhone(params.senderPhone),
-    senderName: (params.senderName || 'यूज़र').trim(),
+    senderName: (params.senderName || 'User').trim(),
     senderRole: params.senderRole,
     text: params.text.trim(),
     createdAt: now,

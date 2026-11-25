@@ -7,6 +7,7 @@ import {
   UserCheck,
   Briefcase,
   Radio,
+  Share2,
 } from 'lucide-react';
 import { closeJobPost, closeLiveRequest } from '../firebase';
 import type {
@@ -16,7 +17,7 @@ import type {
   WorkerProfile,
 } from '../types';
 import {
-  formatRelativeTimeHindi,
+  formatRelativeTime,
   isValidIndianMobile,
   normalizePhone,
 } from '../utils/matching';
@@ -44,11 +45,11 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
     e.preventDefault();
     const cleanPhone = normalizePhone(form.phone);
     if (!form.name.trim()) {
-      onNotify('कृपया अपना नाम लिखें', true);
+      onNotify('Please enter your full name', true);
       return;
     }
     if (!isValidIndianMobile(cleanPhone)) {
-      onNotify('सही 10 अंकों का भारतीय मोबाइल नंबर लिखें (6-9 से शुरू)', true);
+      onNotify('Please enter a valid 10-digit Indian mobile number (starting with 6-9)', true);
       return;
     }
     onLogin({
@@ -58,7 +59,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
       city: selectedCity,
       loggedInAt: Date.now(),
     });
-    onNotify('मोबाइल नंबर सफलतापूर्वक जुड़ गया!');
+    onNotify('Mobile number connected successfully!');
   };
 
   return (
@@ -68,10 +69,10 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
     >
       <div className="space-y-1">
         <h2 className="text-lg font-bold text-slate-900">
-          मोबाइल नंबर से जुड़ें / लॉगिन करें
+          Join / Login with Mobile Number
         </h2>
         <p className="text-xs text-slate-600">
-          कोई पासवर्ड या ईमेल नहीं चाहिए। आपके मोबाइल नंबर से आपके सभी काम, लाइव बुकिंग और प्रोफाइल अपने आप जुड़ जाएंगे।
+          No password or email required. Your worker profile, job posts, and live bookings sync automatically with your mobile number.
         </p>
       </div>
 
@@ -80,7 +81,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
           htmlFor="login-name-input"
           className="block text-sm font-semibold text-slate-800 mb-1"
         >
-          आपका पूरा नाम <span className="text-orange-600">*</span>
+          Full Name <span className="text-orange-600">*</span>
         </label>
         <input
           id="login-name-input"
@@ -89,7 +90,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
           onChange={(e) =>
             setForm((prev) => ({ ...prev, name: e.target.value }))
           }
-          placeholder="जैसे: विजय कुमार / रामू ठेकेदार"
+          placeholder="Enter your full name"
           className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-orange-500 focus:outline-none"
           required
         />
@@ -100,7 +101,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
           htmlFor="login-phone-input"
           className="block text-sm font-semibold text-slate-800 mb-1"
         >
-          10 अंकों का मोबाइल नंबर <span className="text-orange-600">*</span>
+          10-Digit Mobile Number <span className="text-orange-600">*</span>
         </label>
         <div className="flex items-center">
           <span className="min-h-[48px] px-3.5 rounded-l-xl border border-r-0 border-slate-300 bg-slate-100 text-sm font-bold text-slate-700 flex items-center">
@@ -130,7 +131,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
         className="w-full min-h-[48px] rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm inline-flex items-center justify-center gap-2"
       >
         <Phone className="w-4 h-4" />
-        <span>मोबाइल नंबर से जुड़ें / लॉगिन करें</span>
+        <span>Save &amp; Continue</span>
       </button>
     </form>
   );
@@ -147,6 +148,7 @@ interface AccountTabProps {
   onLogout: () => void;
   onUserSynced: (saved: { name: string; phone: string; state: string; city: string }) => void;
   onNotify: (msg: string, isError?: boolean) => void;
+  onShareApp: () => void;
 }
 
 export const AccountTab: React.FC<AccountTabProps> = ({
@@ -160,18 +162,38 @@ export const AccountTab: React.FC<AccountTabProps> = ({
   onLogout,
   onUserSynced,
   onNotify,
+  onShareApp,
 }) => {
   const [showWorkerEditor, setShowWorkerEditor] = useState(false);
 
   if (!currentUser) {
     return (
-      <div className="py-2">
+      <div className="py-2 space-y-4">
         <MobileLoginForm
           selectedState={selectedState}
           selectedCity={selectedCity}
           onLogin={onLogin}
           onNotify={onNotify}
         />
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 max-w-lg mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Invite Workers &amp; Contractors
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Share Kaam Connect directly via WhatsApp or system share
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onShareApp}
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Share App</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -200,21 +222,29 @@ export const AccountTab: React.FC<AccountTabProps> = ({
             </h2>
           </div>
           <p className="text-sm font-mono tabular-nums text-slate-600">
-            +91 {currentUser.phone} · {selectedCity.split('(')[0].trim()}, {selectedState}
+            +91 {currentUser.phone} · {selectedCity}, {selectedState}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={onShareApp}
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold inline-flex items-center gap-1.5"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Share App</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setShowWorkerEditor((prev) => !prev)}
             className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
           >
             {showWorkerEditor
-              ? 'एडिटर बंद करें'
+              ? 'Close Editor'
               : myWorkerProfile
-              ? 'कारीगर प्रोफाइल बदलें'
-              : 'कारीगर प्रोफाइल बनाएं'}
+              ? 'Edit Worker Profile'
+              : 'Create Worker Profile'}
           </button>
           <button
             type="button"
@@ -222,7 +252,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
             className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5"
           >
             <LogOut className="w-4 h-4" />
-            <span>लॉगआउट</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
@@ -247,7 +277,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
         {/* Worker Profile Status */}
         <section className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
           <h3 className="text-base font-bold text-slate-900">
-            मेरा कारीगर प्रोफाइल (Firestore से सिंक)
+            My Worker Profile (Synced with Firestore)
           </h3>
           {myWorkerProfile ? (
             <div className="space-y-1.5 text-xs text-slate-700">
@@ -255,25 +285,25 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                 {myWorkerProfile.skill}
               </div>
               <div>
-                प्रकार:{' '}
+                Type:{' '}
                 <strong>
                   {myWorkerProfile.workerType === 'team_leader'
-                    ? `Team Leader (${myWorkerProfile.teamSize} मजदूर)`
-                    : 'अकेला कारीगर (Individual)'}
+                    ? `Team Leader (${myWorkerProfile.teamSize} Workers)`
+                    : 'Individual Worker'}
                 </strong>
               </div>
               <div>
-                रेट: <strong className="tabular-nums">₹{myWorkerProfile.dailyRate}/दिन</strong> ·{' '}
-                स्थान: {myWorkerProfile.city}, {myWorkerProfile.state}
+                Wage: <strong className="tabular-nums">₹{myWorkerProfile.dailyRate}/day</strong> ·{' '}
+                Location: {myWorkerProfile.city}, {myWorkerProfile.state}
               </div>
               <div>
                 Outstation Ready:{' '}
-                <strong>{myWorkerProfile.outstationReady ? 'हाँ' : 'नहीं'}</strong>
+                <strong>{myWorkerProfile.outstationReady ? 'Yes' : 'No'}</strong>
               </div>
             </div>
           ) : (
             <p className="text-xs text-slate-600">
-              आपने अभी अलग से कारीगर प्रोफाइल नहीं बनाया है। आप चाहें तो ऊपर बटन से प्रोफाइल जोड़ सकते हैं, या बिना प्रोफाइल के भी सीधे लाइव काम Accept कर सकते हैं।
+              You haven&apos;t created a separate worker profile yet. You can create one above, or accept live jobs directly without one.
             </p>
           )}
         </section>
@@ -283,12 +313,12 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <h3 className="text-base font-bold text-slate-900">
-              मैंने जो लाइव काम लिए ({myAcceptedLiveRequests.length})
+              Accepted Live Jobs ({myAcceptedLiveRequests.length})
             </h3>
           </div>
           {myAcceptedLiveRequests.length === 0 ? (
             <p className="text-xs text-slate-600">
-              आपने अभी कोई लाइव काम Accept नहीं किया है।
+              You have not accepted any live jobs yet.
             </p>
           ) : (
             <div className="space-y-2">
@@ -300,7 +330,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                   <div>
                     <div className="font-bold text-slate-900">{req.skill}</div>
                     <div className="text-slate-600">
-                      {req.contractorName} · ₹{req.dailyRate}/दिन · {req.city}
+                      {req.contractorName} · ₹{req.dailyRate}/day · {req.city}
                     </div>
                   </div>
                   <a
@@ -308,7 +338,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                     className="min-h-[38px] px-3 rounded-lg bg-emerald-600 text-white font-bold inline-flex items-center gap-1 shrink-0"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    <span>कॉल</span>
+                    <span>Call Now</span>
                   </a>
                 </div>
               ))}
@@ -321,12 +351,12 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-orange-600" />
             <h3 className="text-base font-bold text-slate-900">
-              मेरी लाइव रिक्वेस्ट ({myPostedLiveRequests.length})
+              My Live Requests ({myPostedLiveRequests.length})
             </h3>
           </div>
           {myPostedLiveRequests.length === 0 ? (
             <p className="text-xs text-slate-600">
-              इस नंबर से कोई लाइव रिक्वेस्ट पोस्ट नहीं की गई है।
+              No live requests posted with this number yet.
             </p>
           ) : (
             <div className="space-y-2">
@@ -340,8 +370,8 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                       {req.skill} ({req.confirmedCount}/{req.requiredCount})
                     </div>
                     <div className="text-slate-600">
-                      {req.city} · {formatRelativeTimeHindi(req.createdAt)} ·{' '}
-                      {req.status === 'open' ? 'चालू' : 'बंद'}
+                      {req.city} · {formatRelativeTime(req.createdAt)} ·{' '}
+                      {req.status === 'open' ? 'Open' : 'Closed'}
                     </div>
                   </div>
                   {req.status === 'open' && (
@@ -351,7 +381,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                       className="min-h-[38px] px-3 rounded-lg bg-rose-600 text-white font-bold inline-flex items-center gap-1 shrink-0"
                     >
                       <XCircle className="w-3.5 h-3.5" />
-                      <span>बंद करें</span>
+                      <span>Close Request</span>
                     </button>
                   )}
                 </div>
@@ -365,12 +395,12 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           <div className="flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-slate-700" />
             <h3 className="text-base font-bold text-slate-900">
-              मेरी जॉब पोस्ट ({myJobPosts.length})
+              My Job Posts ({myJobPosts.length})
             </h3>
           </div>
           {myJobPosts.length === 0 ? (
             <p className="text-xs text-slate-600">
-              इस नंबर से कोई जॉब पोस्ट नहीं की गई है।
+              No regular jobs posted with this number yet.
             </p>
           ) : (
             <div className="space-y-2">
@@ -381,11 +411,11 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                 >
                   <div>
                     <div className="font-bold text-slate-900">
-                      {job.skill} ({job.workersNeeded} मजदूर)
+                      {job.skill} ({job.workersNeeded} Workers)
                     </div>
                     <div className="text-slate-600">
-                      ₹{job.dailyRate}/दिन · {job.city} ·{' '}
-                      {job.status === 'open' ? 'चालू' : 'बंद'}
+                      ₹{job.dailyRate}/day · {job.city} ·{' '}
+                      {job.status === 'open' ? 'Open' : 'Closed'}
                     </div>
                   </div>
                   {job.status === 'open' && (
@@ -395,7 +425,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                       className="min-h-[38px] px-3 rounded-lg bg-rose-600 text-white font-bold inline-flex items-center gap-1 shrink-0"
                     >
                       <XCircle className="w-3.5 h-3.5" />
-                      <span>बंद करें</span>
+                      <span>Close</span>
                     </button>
                   )}
                 </div>

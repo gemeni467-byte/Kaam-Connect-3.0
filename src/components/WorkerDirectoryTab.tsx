@@ -14,6 +14,7 @@ import {
   buildDirectWhatsAppUrl,
   buildTelUrl,
   buildWhatsAppShareUrl,
+  getAppShareLink,
   matchesLocationFilter,
   resolveSkill,
 } from '../utils/matching';
@@ -73,11 +74,12 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
   const handleShareWorker = (worker: WorkerProfile) => {
     const teamText =
       worker.workerType === 'team_leader'
-        ? `Team Leader (${worker.teamSize} मजदूर)`
-        : 'अकेला कारीगर';
-    const text = `Kaam Connect कारीगर:\nनाम: ${worker.name}\nकाम: ${worker.skill}\nप्रकार: ${teamText}\nरेट: ₹${worker.dailyRate}/दिन\nस्थान: ${worker.city}, ${worker.state}${
-      worker.outstationReady ? '\nबाहर काम करने के लिए तैयार (Outstation Ready)' : ''
-    }\nसीधे कॉल करें: +91 ${worker.phone}`;
+        ? `Team Leader (${worker.teamSize} Workers)`
+        : 'Individual Worker';
+    const appLink = getAppShareLink();
+    const text = `Skilled Worker on Kaam Connect:\nName: ${worker.name}\nSkill / Trade: ${worker.skill}\nType: ${teamText}\nDaily Wage: ₹${worker.dailyRate}/day\nLocation: ${worker.city}, ${worker.state}${
+      worker.outstationReady ? '\nReady to work in other cities / states' : ''
+    }\nCall Directly: +91 ${worker.phone}\nLink: ${appLink}`;
     window.open(buildWhatsAppShareUrl(text), '_blank', 'noopener,noreferrer');
   };
 
@@ -95,7 +97,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              मेरे शहर में
+              My City
             </button>
             <button
               type="button"
@@ -106,7 +108,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              पूरे India में (All India)
+              All India
             </button>
           </div>
 
@@ -118,10 +120,10 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
             <UserPlus className="w-4 h-4" />
             <span>
               {showRegisterForm
-                ? 'फॉर्म बंद करें'
+                ? 'Close Form'
                 : myWorkerProfile
-                ? 'अपना प्रोफाइल अपडेट करें'
-                : 'कारीगर के रूप में जुड़ें'}
+                ? 'Update Worker Profile'
+                : 'Register as Worker'}
             </span>
           </button>
         </div>
@@ -129,7 +131,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
           <SkillSelectField
             id="workers-filter-skill"
-            label="काम के अनुसार कारीगर खोजें"
+            label="Filter Workers by Skill / Trade"
             selectedSkill={skillFilter}
             customSkill={customSkillFilter}
             onSelectSkill={setSkillFilter}
@@ -149,10 +151,10 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
               }`}
             >
               <Plane className="w-3.5 h-3.5" />
-              <span>केवल Outstation Ready</span>
+              <span>Outstation Ready Only</span>
             </button>
             <span className="text-xs text-slate-500 tabular-nums">
-              कुल {filteredWorkers.length} कारीगर
+              {filteredWorkers.length} Workers Found
             </span>
           </div>
         </div>
@@ -176,12 +178,12 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
       {filteredWorkers.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
           <h3 className="text-base font-bold text-slate-900">
-            अभी इस फ़िल्टर में कोई कारीगर उपलब्ध नहीं है
+            No Workers Available for This Filter
           </h3>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
             {locationFilter === 'city'
-              ? 'आप "पूरे India में (All India)" चुनकर देश भर के कारीगर देख सकते हैं या खुद को कारीगर के रूप में जोड़ सकते हैं।'
-              : 'अभी कोई पंजीकृत कारीगर नहीं मिला। ऊपर बटन दबाकर पहला कारीगर प्रोफाइल जोड़ें।'}
+              ? 'Switch to "All India" to find skilled workers across the country, or register your own profile above.'
+              : 'No registered workers found yet. Tap the button above to create the first worker profile.'}
           </p>
           {locationFilter === 'city' && (
             <button
@@ -189,7 +191,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
               onClick={() => setLocationFilter('all_india')}
               className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800"
             >
-              पूरे India में देखें
+              View All India Workers
             </button>
           )}
         </div>
@@ -214,7 +216,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                             : 'bg-slate-100 text-slate-600'
                         }`}
                       >
-                        {worker.isOnline ? 'Duty ON' : 'Offline'}
+                        {worker.isOnline ? 'Duty ON' : 'Duty OFF'}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-orange-700 mt-0.5">
@@ -227,7 +229,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                       ₹{worker.dailyRate}
                     </div>
                     <div className="text-[11px] font-medium text-slate-500">
-                      प्रति दिन
+                      ₹/day
                     </div>
                   </div>
                 </div>
@@ -236,21 +238,21 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>
-                      {worker.city}, {worker.state} · अनुभव: {worker.experienceYears} साल
+                      {worker.city}, {worker.state} · Experience: {worker.experienceYears} yrs
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>
                       {worker.workerType === 'team_leader'
-                        ? `Team Leader (टोली के साथ: ${worker.teamSize} मजदूर)`
-                        : 'अकेला कारीगर (Individual)'}
+                        ? `Team Leader (With Squad: ${worker.teamSize} Workers)`
+                        : 'Individual Worker'}
                     </span>
                   </div>
                   {worker.outstationReady && (
                     <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
                       <Plane className="w-3.5 h-3.5 shrink-0" />
-                      <span>दूसरे शहर / राज्य में जाने के लिए तैयार (Outstation Ready)</span>
+                      <span>Ready to work in other cities / states</span>
                     </div>
                   )}
                 </div>
@@ -263,12 +265,12 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                     className="min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>सीधे कॉल करें</span>
+                    <span>Call Now</span>
                   </a>
                   <a
                     href={buildDirectWhatsAppUrl(
                       worker.phone,
-                      `नमस्ते ${worker.name} जी, मैंने Kaam Connect पर आपकी "${worker.skill}" प्रोफाइल देखी है।`,
+                      `Hello ${worker.name}, I saw your "${worker.skill}" profile on Kaam Connect.`,
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -286,7 +288,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                     className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center gap-1.5"
                   >
                     <Share2 className="w-3.5 h-3.5" />
-                    <span>WhatsApp पर Share करें</span>
+                    <span>Share on WhatsApp</span>
                   </button>
                   <button
                     type="button"
@@ -301,7 +303,7 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
                     className="min-h-[38px] px-2.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 inline-flex items-center gap-1"
                   >
                     <Flag className="w-3.5 h-3.5" />
-                    <span>रिपोर्ट</span>
+                    <span>Report</span>
                   </button>
                 </div>
               </div>

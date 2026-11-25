@@ -107,15 +107,15 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
     const finalSkill = resolveSkill(form.selectedSkill, form.customSkill);
 
     if (!form.name.trim()) {
-      onNotify('अपना पूरा नाम लिखें', true);
+      onNotify('Please enter your full name', true);
       return;
     }
     if (!isValidIndianMobile(cleanPhone)) {
-      onNotify('सही 10 अंकों का भारतीय मोबाइल नंबर लिखें', true);
+      onNotify('Please enter a valid 10-digit Indian mobile number', true);
       return;
     }
     if (!finalSkill) {
-      onNotify('कृपया अपना काम (Skill) चुनें या लिखें', true);
+      onNotify('Please select or enter your skill / trade', true);
       return;
     }
 
@@ -139,7 +139,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
         createdAt: existingProfile?.createdAt,
       });
 
-      onNotify('कारीगर प्रोफाइल सेव हो गया!');
+      onNotify('Worker profile saved!');
       onSaved({
         name: form.name.trim(),
         phone: cleanPhone,
@@ -148,7 +148,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       });
     } catch (err) {
       onNotify(
-        err instanceof Error ? err.message : 'प्रोफाइल सेव करने में समस्या हुई',
+        err instanceof Error ? err.message : 'Failed to save worker profile',
         true,
       );
     } finally {
@@ -164,11 +164,11 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       <div className="border-b border-slate-100 pb-3">
         <h3 className="text-base font-bold text-slate-900">
           {existingProfile
-            ? 'मेरा कारीगर प्रोफाइल अपडेट करें'
-            : 'कारीगर / टोली प्रोफाइल बनाएं'}
+            ? 'Update Worker Profile'
+            : 'Create Worker / Squad Profile'}
         </h3>
         <p className="text-xs text-slate-600 mt-0.5">
-          ठेकेदार सीधे आपके नंबर पर कॉल और WhatsApp कर सकेंगे
+          Contractors can call and message you directly without any middleman
         </p>
       </div>
 
@@ -178,7 +178,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-name"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            आपका नाम <span className="text-orange-600">*</span>
+            Your Full Name <span className="text-orange-600">*</span>
           </label>
           <input
             id="worker-name"
@@ -187,7 +187,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             onChange={(e) =>
               setForm((prev) => ({ ...prev, name: e.target.value }))
             }
-            placeholder="जैसे: संतोष पासवान"
+            placeholder="e.g. Santosh Paswan"
             className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
             required
           />
@@ -198,7 +198,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-phone"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            मोबाइल नंबर (10 अंक) <span className="text-orange-600">*</span>
+            10-Digit Mobile Number <span className="text-orange-600">*</span>
           </label>
           <input
             id="worker-phone"
@@ -221,7 +221,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
 
       <SkillSelectField
         id="worker-skill-select"
-        label="आपका मुख्य काम (Skill)"
+        label="Your Primary Skill / Trade"
         selectedSkill={form.selectedSkill}
         customSkill={form.customSkill}
         onSelectSkill={(val) =>
@@ -236,7 +236,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       {/* Individual vs Team Leader */}
       <div className="space-y-2">
         <span className="block text-sm font-semibold text-slate-800">
-          काम करने का तरीका चुनें
+          Work Type
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
@@ -251,7 +251,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             }`}
           >
             <User className="w-4 h-4 shrink-0" />
-            <span>अकेला कारीगर (Individual)</span>
+            <span>Individual Worker</span>
           </button>
 
           <button
@@ -266,7 +266,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             }`}
           >
             <Users className="w-4 h-4 shrink-0" />
-            <span>Team Leader (टोली के साथ)</span>
+            <span>Team Leader (With Squad)</span>
           </button>
         </div>
 
@@ -276,7 +276,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
               htmlFor="worker-team-size"
               className="block text-xs font-bold text-slate-800"
             >
-              आपकी टोली में कितने कारीगर/मजदूर हैं?
+              Team Size (Number of Workers in Squad)
             </label>
             <div className="flex flex-wrap items-center gap-2">
               {[5, 10, 20].map((size) => (
@@ -292,7 +292,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
                       : 'border-slate-300 bg-white text-slate-700'
                   }`}
                 >
-                  {size} मजदूर
+                  {size} Workers
                 </button>
               ))}
               <input
@@ -329,7 +329,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       >
         <span className="flex items-center gap-2 text-xs sm:text-sm font-bold">
           <Plane className="w-4 h-4 shrink-0" />
-          <span>दूसरे शहर / राज्य में जाने के लिए तैयार (Outstation Ready)</span>
+          <span>Ready to work in other cities / states</span>
         </span>
         <span
           className={`px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 ${
@@ -338,7 +338,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
               : 'bg-slate-200 text-slate-700'
           }`}
         >
-          {form.outstationReady ? 'हाँ' : 'नहीं'}
+          {form.outstationReady ? 'Yes' : 'No'}
         </span>
       </button>
 
@@ -348,7 +348,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-daily-rate"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            रोज़ाना रेट (₹)
+            Daily Wage (₹/day)
           </label>
           <input
             id="worker-daily-rate"
@@ -367,7 +367,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-experience"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            अनुभव (साल)
+            Experience (Years)
           </label>
           <input
             id="worker-experience"
@@ -387,7 +387,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-state"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            राज्य (State)
+            State
           </label>
           <select
             id="worker-state"
@@ -415,11 +415,12 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-city"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            शहर / क्षेत्र
+            City / Site Area
           </label>
           <input
             id="worker-city"
             type="text"
+            list="worker-city-suggestions"
             value={form.city}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, city: e.target.value }))
@@ -427,6 +428,11 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
             required
           />
+          <datalist id="worker-city-suggestions">
+            {(QUICK_CITIES_BY_STATE[form.state] || []).map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </div>
       </div>
 
@@ -437,7 +443,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             onClick={onCancel}
             className="flex-1 min-h-[46px] rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
           >
-            रद्द करें
+            Cancel
           </button>
         )}
         <button
@@ -446,7 +452,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
           className="flex-1 min-h-[46px] rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-sm font-bold text-white inline-flex items-center justify-center gap-2"
         >
           <Save className="w-4 h-4" />
-          <span>{submitting ? 'सेव हो रहा है...' : 'प्रोफाइल सेव करें'}</span>
+          <span>{submitting ? 'Saving...' : 'Save Worker Profile'}</span>
         </button>
       </div>
     </form>

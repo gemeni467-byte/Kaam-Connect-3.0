@@ -19,15 +19,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     Icon: React.ComponentType<{ className?: string }>;
     badge?: number;
   }> = [
-    { id: 'live', label: 'लाइव काम', Icon: Radio, badge: liveCount },
-    { id: 'jobs', label: 'काम खोजें', Icon: Briefcase },
-    { id: 'workers', label: 'कारीगर', Icon: Users },
-    { id: 'account', label: 'मेरा खाता', Icon: UserCircle },
+    { id: 'live', label: 'Live Duty', Icon: Radio, badge: liveCount },
+    { id: 'jobs', label: 'Find Work', Icon: Briefcase },
+    { id: 'workers', label: 'Hire Workers', Icon: Users },
+    { id: 'account', label: 'My Account', Icon: UserCircle },
   ];
 
   return (
     <nav
-      aria-label="मोबाइल नेविगेशन"
+      aria-label="Mobile navigation"
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 safe-bottom-nav"
     >
       <div className="grid grid-cols-4 h-14 max-w-lg mx-auto">

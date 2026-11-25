@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildShareAppText,
   canWorkerAcceptRequest,
+  cleanCityLabel,
   computeAcceptTransactionUpdate,
   isValidIndianMobile,
   isWithinHours,
+  LIVE_CLOUD_RUN_URL,
   matchesLocationFilter,
   normalizePhone,
   resolveSkill,
@@ -18,15 +21,15 @@ const BASE_TIME = 1_760_000_000_000;
 function makeLiveRequest(overrides: Partial<LiveRequest> = {}): LiveRequest {
   return {
     id: 'req-1',
-    contractorName: 'रमेश ठेकेदार',
+    contractorName: 'Ramesh Contractor',
     contractorPhone: '9876543210',
-    skill: 'वेल्डर (Welder - Arc / MIG / TIG)',
+    skill: 'MIG Welder',
     requiredCount: 3,
     confirmedCount: 0,
     dailyRate: 850,
     state: 'Odisha',
-    city: 'राउरकेला (Rourkela)',
-    siteAddress: 'सेक्टर 19, स्टील प्लांट गेट',
+    city: 'Rourkela',
+    siteAddress: 'Sector 19, Steel Plant Gate',
     facilities: { stayFree: true, foodFree: false, travelAllowance: true },
     status: 'open',
     acceptedWorkers: [],
@@ -46,12 +49,12 @@ test('normalizes and validates 10-digit Indian mobile numbers', () => {
   assert.equal(isValidIndianMobile('12345'), false);
 });
 
-test('resolves custom skill when अन्य (खुद लिखें) is selected', () => {
+test('resolves custom skill when Other (Write Your Own) is selected', () => {
   assert.equal(
-    resolveSkill(CUSTOM_SKILL_OPTION, '  MIG वेल्डर  '),
-    'MIG वेल्डर',
+    resolveSkill(CUSTOM_SKILL_OPTION, '  TIG Welder  '),
+    'TIG Welder',
   );
-  assert.equal(resolveSkill('फिटर (Pipe / Structural Fitter)', 'ignored'), 'फिटर (Pipe / Structural Fitter)');
+  assert.equal(resolveSkill('Pipe / Structure Fitter', 'ignored'), 'Pipe / Structure Fitter');
 });
 
 test('enforces 6-hour live request and 7-day job post expiry windows', () => {
@@ -66,21 +69,18 @@ test('enforces 6-hour live request and 7-day job post expiry windows', () => {
   assert.equal(isWithinHours(eightDaysAgo, 168, BASE_TIME), false);
 });
 
-test('filters correctly between city and all_india modes', () => {
+test('filters correctly between city and all_india modes and cleans legacy city labels', () => {
+  assert.equal(cleanCityLabel('Rourkela'), 'Rourkela');
   assert.equal(
-    matchesLocationFilter('Odisha', 'राउरकेला (Rourkela)', 'Odisha', 'राउरकेला (Rourkela)', 'city'),
+    matchesLocationFilter('Odisha', 'Rourkela', 'Odisha', 'Rourkela', 'city'),
     true,
   );
   assert.equal(
-    matchesLocationFilter('Odisha', 'Rourkela', 'Odisha', 'राउरकेला (Rourkela)', 'city'),
-    true,
-  );
-  assert.equal(
-    matchesLocationFilter('Bihar', 'पटना (Patna)', 'Odisha', 'राउरकेला (Rourkela)', 'city'),
+    matchesLocationFilter('Bihar', 'Patna', 'Odisha', 'Rourkela', 'city'),
     false,
   );
   assert.equal(
-    matchesLocationFilter('Bihar', 'पटना (Patna)', 'Odisha', 'राउरकेला (Rourkela)', 'all_india'),
+    matchesLocationFilter('Bihar', 'Patna', 'Odisha', 'Rourkela', 'all_india'),
     true,
   );
 });
@@ -90,7 +90,7 @@ test('disables accept on contractor own request and shows full only when confirm
   const ownRes = canWorkerAcceptRequest(ownReq, '9876543210', BASE_TIME);
   assert.equal(ownRes.allowed, false);
   assert.equal(ownRes.isOwnRequest, true);
-  assert.equal(ownRes.reason, 'यह आपकी अपनी रिक्वेस्ट है');
+  assert.equal(ownRes.reason, 'This is your own request');
 
   const partialReq = makeLiveRequest({ confirmedCount: 2, requiredCount: 3 });
   assert.equal(canWorkerAcceptRequest(partialReq, '9123456789', BASE_TIME).allowed, true);
@@ -99,21 +99,29 @@ test('disables accept on contractor own request and shows full only when confirm
   const fullRes = canWorkerAcceptRequest(fullReq, '9123456789', BASE_TIME);
   assert.equal(fullRes.allowed, false);
   assert.equal(fullRes.isFull, true);
-  assert.equal(fullRes.reason, 'सभी मजदूर पूरे हो चुके हैं');
+  assert.equal(fullRes.reason, 'All required workers have been confirmed');
 });
 
 test('computes accept transaction update without worker profile and strips undefined values', () => {
-  const req = makeLiveRequest({ skill: 'गैस कटर' });
+  const req = makeLiveRequest({ skill: 'Gas Cutter' });
   const update = computeAcceptTransactionUpdate(
     req,
-    { name: 'संतोष कुमार', phone: '9988776655' },
+    { name: 'Santosh Kumar', phone: '9988776655' },
     null,
     BASE_TIME,
   );
   assert.equal(update.confirmedCount, 1);
   assert.deepEqual(update.acceptedPhones, ['9988776655']);
-  assert.equal(update.acceptedWorkers[0].skill, 'गैस कटर');
+  assert.equal(update.acceptedWorkers[0].skill, 'Gas Cutter');
 
   const cleaned = sanitizeForFirestore({ a: 1, b: undefined, nested: { c: undefined, d: 'ok' } });
   assert.deepEqual(cleaned, { a: 1, nested: { d: 'ok' } });
+});
+
+test('builds exact Share App message with live Cloud Run URL', () => {
+  const msg = buildShareAppText();
+  assert.equal(
+    msg,
+    `Kaam Connect — Sidha Kaam, Sidha Sampark (100% Free)! Welder, Fitter, Rigger, Gas Cutter, Rajmistri aur Helper ke liye bina commission kaam payein ya bulayein. Abhi kholein: ${LIVE_CLOUD_RUN_URL}`,
+  );
 });

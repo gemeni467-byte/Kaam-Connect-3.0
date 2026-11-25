@@ -14,7 +14,12 @@ import type {
   UserAccount,
   WorkerProfile,
 } from './types';
-import { isWithinHours, normalizePhone } from './utils/matching';
+import {
+  cleanCityLabel,
+  isWithinHours,
+  normalizePhone,
+  shareKaamConnectApp,
+} from './utils/matching';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { LocationSelectorModal } from './components/LocationSelectorModal';
@@ -32,6 +37,7 @@ function loadStoredUser(): UserAccount | null {
     if (parsed && parsed.name && parsed.phone) {
       return {
         ...parsed,
+        city: cleanCityLabel(parsed.city || DEFAULT_CITY),
         phone: normalizePhone(parsed.phone),
       };
     }
@@ -48,7 +54,7 @@ function loadStoredLocation(): { state: string; city: string } {
     const parsed = JSON.parse(raw) as { state?: string; city?: string };
     return {
       state: parsed.state || DEFAULT_STATE,
-      city: parsed.city || DEFAULT_CITY,
+      city: cleanCityLabel(parsed.city || DEFAULT_CITY) || DEFAULT_CITY,
     };
   } catch {
     return { state: DEFAULT_STATE, city: DEFAULT_CITY };
@@ -138,7 +144,7 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast('आप लॉगआउट हो गए हैं।');
+    showToast('You have logged out.');
   };
 
   const handleApplyLocation = (state: string, city: string) => {
@@ -182,6 +188,13 @@ export default function App() {
       isWithinHours(r.createdAt, LIVE_REQUEST_MAX_AGE_HOURS),
   ).length;
 
+  const handleShareApp = async () => {
+    const result = await shareKaamConnectApp();
+    if (result === 'shared') {
+      showToast('Thanks for sharing Kaam Connect!');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Header
@@ -190,6 +203,7 @@ export default function App() {
         selectedState={location.state}
         selectedCity={location.city}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
+        onShareApp={handleShareApp}
       />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 pt-4 pb-24 md:pb-10 space-y-4">
@@ -197,10 +211,10 @@ export default function App() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-200">
           <div>
             <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-              सीधा काम, सीधा संपर्क — बिना किसी बिचौलिए के
+              Direct Work, Direct Contact — No Middleman
             </h1>
             <p className="text-xs text-slate-600 mt-0.5">
-              वर्तमान क्षेत्र: <strong className="text-slate-800">{location.city}</strong>,{' '}
+              Current Area: <strong className="text-slate-800">{location.city}</strong>,{' '}
               {location.state}
             </p>
           </div>
@@ -211,7 +225,7 @@ export default function App() {
               onClick={() => setActiveTab('account')}
               className="min-h-[42px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold self-start sm:self-auto whitespace-nowrap shrink-0"
             >
-              मोबाइल नंबर से जुड़ें
+              Join / Login
             </button>
           )}
         </div>
@@ -221,7 +235,7 @@ export default function App() {
             role="alert"
             className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900"
           >
-            डेटाबेस से जुड़ने में समस्या: {firestoreError}
+            Database connection error: {firestoreError}
           </div>
         )}
 
@@ -275,6 +289,7 @@ export default function App() {
             onLogout={handleLogout}
             onUserSynced={handleUserSyncedFromProfile}
             onNotify={showToast}
+            onShareApp={handleShareApp}
           />
         )}
       </main>
