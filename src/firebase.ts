@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import type {
+  ContractorProfile,
   FraudReport,
   JobPost,
   LiveRequest,
@@ -39,6 +40,7 @@ export const db = getFirestore(app);
 
 export const COLLECTIONS = {
   WORKERS: 'workers',
+  CONTRACTORS: 'contractors',
   LIVE_REQUESTS: 'live_requests',
   JOBS: 'jobs',
   REPORTS: 'reports',
@@ -53,6 +55,14 @@ export function subscribeWorkers(
     (snapshot) => {
       const list: WorkerProfile[] = snapshot.docs.map((d) => {
         const data = d.data() as Record<string, unknown>;
+        const isAvailable =
+          typeof data.isAvailable === 'boolean'
+            ? data.isAvailable
+            : typeof data.isOnline === 'boolean'
+            ? data.isOnline
+            : true;
+        const isOnline =
+          typeof data.isOnline === 'boolean' ? data.isOnline : isAvailable;
         return {
           id: d.id,
           name: String(data.name || ''),
@@ -65,12 +75,57 @@ export function subscribeWorkers(
           state: String(data.state || 'Odisha'),
           city: String(data.city || 'Rourkela'),
           experienceYears: Number(data.experienceYears || 0),
-          isOnline: Boolean(data.isOnline),
+          isOnline,
+          isAvailable,
           updatedAt: Number(data.updatedAt || 0),
           createdAt: Number(data.createdAt || data.updatedAt || 0),
         };
       });
-      list.sort((a, b) => Number(b.isOnline) - Number(a.isOnline) || b.updatedAt - a.updatedAt);
+      list.sort(
+        (a, b) =>
+          Number(b.isAvailable) - Number(a.isAvailable) ||
+          Number(b.isOnline) - Number(a.isOnline) ||
+          b.updatedAt - a.updatedAt,
+      );
+      onData(list);
+    },
+    (error) => onError(error),
+  );
+}
+
+export function subscribeContractors(
+  onData: (contractors: ContractorProfile[]) => void,
+  onError: (err: Error) => void,
+) {
+  return onSnapshot(
+    collection(db, COLLECTIONS.CONTRACTORS),
+    (snapshot) => {
+      const list: ContractorProfile[] = snapshot.docs.map((d) => {
+        const data = d.data() as Record<string, unknown>;
+        const facilities = (data.facilities as Record<string, unknown>) || {};
+        return {
+          id: d.id,
+          name: String(data.name || ''),
+          companyName: String(data.companyName || ''),
+          phone: normalizePhone(String(data.phone || d.id)),
+          tradesHired: Array.isArray(data.tradesHired)
+            ? (data.tradesHired as string[]).map((t) => String(t).trim()).filter(Boolean)
+            : [],
+          state: String(data.state || 'Odisha'),
+          city: String(data.city || 'Rourkela'),
+          facilities: {
+            stayFree: Boolean(facilities.stayFree),
+            foodFree: Boolean(facilities.foodFree),
+            travelAllowance: Boolean(facilities.travelAllowance),
+          },
+          isHiring: typeof data.isHiring === 'boolean' ? data.isHiring : true,
+          updatedAt: Number(data.updatedAt || 0),
+          createdAt: Number(data.createdAt || data.updatedAt || 0),
+        };
+      });
+      list.sort(
+        (a, b) => Number(b.isHiring) - Number(a.isHiring) || b.updatedAt - a.updatedAt,
+      );
       onData(list);
     },
     (error) => onError(error),
@@ -167,6 +222,7 @@ export async function saveWorkerProfile(
 ): Promise<void> {
   const cleanPhone = normalizePhone(profile.phone);
   const now = Date.now();
+  const isAvailable = Boolean(profile.isAvailable);
   const payload = sanitizeForFirestore({
     name: profile.name.trim(),
     phone: cleanPhone,
@@ -178,12 +234,30 @@ export async function saveWorkerProfile(
     state: profile.state,
     city: profile.city.trim(),
     experienceYears: Math.max(0, Number(profile.experienceYears || 0)),
-    isOnline: Boolean(profile.isOnline),
+    isOnline: isAvailable,
+    isAvailable,
     createdAt: profile.createdAt || now,
     updatedAt: now,
   });
 
   await setDoc(doc(db, COLLECTIONS.WORKERS, cleanPhone), payload, { merge: true });
+}
+
+export async function setWorkerAvailabilityStatus(
+  worker: WorkerProfile,
+  isAvailable: boolean,
+): Promise<void> {
+  const cleanPhone = normalizePhone(worker.phone);
+  const now = Date.now();
+  await setDoc(
+    doc(db, COLLECTIONS.WORKERS, cleanPhone),
+    sanitizeForFirestore({
+      isAvailable,
+      isOnline: isAvailable,
+      updatedAt: now,
+    }),
+    { merge: true },
+  );
 }
 
 export async function setWorkerDutyStatus(params: {
@@ -208,10 +282,55 @@ export async function setWorkerDutyStatus(params: {
     city: params.existingProfile?.city || params.city,
     experienceYears: params.existingProfile?.experienceYears || 0,
     isOnline: params.isOnline,
+    isAvailable: params.isOnline,
     createdAt: params.existingProfile?.createdAt || now,
     updatedAt: now,
   });
   await setDoc(doc(db, COLLECTIONS.WORKERS, cleanPhone), payload, { merge: true });
+}
+
+export async function saveContractorProfile(
+  profile: Omit<ContractorProfile, 'id' | 'createdAt' | 'updatedAt'> & {
+    createdAt?: number;
+  },
+): Promise<void> {
+  const cleanPhone = normalizePhone(profile.phone);
+  const now = Date.now();
+  const payload = sanitizeForFirestore({
+    name: profile.name.trim(),
+    companyName: profile.companyName.trim(),
+    phone: cleanPhone,
+    tradesHired: profile.tradesHired.map((t) => t.trim()).filter(Boolean),
+    state: profile.state,
+    city: profile.city.trim(),
+    facilities: {
+      stayFree: Boolean(profile.facilities.stayFree),
+      foodFree: Boolean(profile.facilities.foodFree),
+      travelAllowance: Boolean(profile.facilities.travelAllowance),
+    },
+    isHiring: Boolean(profile.isHiring),
+    createdAt: profile.createdAt || now,
+    updatedAt: now,
+  });
+
+  await setDoc(doc(db, COLLECTIONS.CONTRACTORS, cleanPhone), payload, {
+    merge: true,
+  });
+}
+
+export async function setContractorHiringStatus(
+  contractor: ContractorProfile,
+  isHiring: boolean,
+): Promise<void> {
+  const cleanPhone = normalizePhone(contractor.phone);
+  await setDoc(
+    doc(db, COLLECTIONS.CONTRACTORS, cleanPhone),
+    sanitizeForFirestore({
+      isHiring,
+      updatedAt: Date.now(),
+    }),
+    { merge: true },
+  );
 }
 
 export async function createLiveRequest(

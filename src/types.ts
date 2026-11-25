@@ -1,4 +1,4 @@
-export type ActiveTab = 'live' | 'jobs' | 'workers' | 'account';
+export type ActiveTab = 'live' | 'workers' | 'contractors' | 'account';
 
 export type LocationFilterMode = 'city' | 'all_india';
 
@@ -31,6 +31,21 @@ export interface WorkerProfile {
   city: string;
   experienceYears: number;
   isOnline: boolean;
+  isAvailable: boolean;
+  updatedAt: number;
+  createdAt: number;
+}
+
+export interface ContractorProfile {
+  id: string;
+  name: string;
+  companyName: string;
+  phone: string;
+  tradesHired: string[];
+  state: string;
+  city: string;
+  facilities: FacilityFlags;
+  isHiring: boolean;
   updatedAt: number;
   createdAt: number;
 }
@@ -90,7 +105,7 @@ export interface JobPost {
 
 export interface FraudReport {
   id?: string;
-  targetType: 'live_request' | 'job' | 'worker';
+  targetType: 'live_request' | 'job' | 'worker' | 'contractor';
   targetId: string;
   targetName: string;
   targetPhone: string;

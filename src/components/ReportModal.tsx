@@ -5,10 +5,11 @@ import { submitFraudReport } from '../firebase';
 import type { UserAccount } from '../types';
 
 export interface ReportTarget {
-  targetType: 'live_request' | 'job' | 'worker';
+  targetType: 'live_request' | 'job' | 'worker' | 'contractor';
   targetId: string;
   targetName: string;
   targetPhone: string;
+  hidePhone?: boolean;
 }
 
 interface ReportModalProps {
@@ -86,8 +87,12 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
             <span className="font-semibold text-slate-900">{target.targetName}</span>
-            <span className="mx-1.5">·</span>
-            <span className="font-mono tabular-nums">{target.targetPhone}</span>
+            {!target.hidePhone && target.targetPhone && (
+              <>
+                <span className="mx-1.5">·</span>
+                <span className="font-mono tabular-nums">{target.targetPhone}</span>
+              </>
+            )}
           </div>
 
           <div>

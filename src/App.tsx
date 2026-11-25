@@ -6,9 +6,15 @@ import {
   LOCATION_STORAGE_KEY,
   USER_STORAGE_KEY,
 } from './data/constants';
-import { subscribeJobs, subscribeLiveRequests, subscribeWorkers } from './firebase';
+import {
+  subscribeContractors,
+  subscribeJobs,
+  subscribeLiveRequests,
+  subscribeWorkers,
+} from './firebase';
 import type {
   ActiveTab,
+  ContractorProfile,
   JobPost,
   LiveRequest,
   UserAccount,
@@ -25,8 +31,8 @@ import { BottomNav } from './components/BottomNav';
 import { LocationSelectorModal } from './components/LocationSelectorModal';
 import { ReportModal, type ReportTarget } from './components/ReportModal';
 import { LiveMatchingTab } from './components/LiveMatchingTab';
-import { JobBoardTab } from './components/JobBoardTab';
 import { WorkerDirectoryTab } from './components/WorkerDirectoryTab';
+import { ContractorDirectoryTab } from './components/ContractorDirectoryTab';
 import { AccountTab } from './components/AccountTab';
 
 function loadStoredUser(): UserAccount | null {
@@ -71,6 +77,7 @@ export default function App() {
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   const [workers, setWorkers] = useState<WorkerProfile[]>([]);
+  const [contractors, setContractors] = useState<ContractorProfile[]>([]);
   const [liveRequests, setLiveRequests] = useState<LiveRequest[]>([]);
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
@@ -98,6 +105,14 @@ export default function App() {
       (err) => setFirestoreError(err.message),
     );
 
+    const unsubContractors = subscribeContractors(
+      (list) => {
+        setContractors(list);
+        setFirestoreError(null);
+      },
+      (err) => setFirestoreError(err.message),
+    );
+
     const unsubLive = subscribeLiveRequests(
       (list) => {
         setLiveRequests(list);
@@ -116,6 +131,7 @@ export default function App() {
 
     return () => {
       unsubWorkers();
+      unsubContractors();
       unsubLive();
       unsubJobs();
     };
@@ -166,19 +182,32 @@ export default function App() {
     state: string;
     city: string;
   }) => {
-    handleLogin({
-      name: saved.name,
-      phone: saved.phone,
-      state: saved.state,
-      city: saved.city,
-      loggedInAt: currentUser?.loggedInAt || Date.now(),
-    });
-    handleApplyLocation(saved.state, saved.city);
+    // Only update currentUser if not logged in yet or editing own profile;
+    // organizers registering other people on the spot keep their own session.
+    if (
+      !currentUser ||
+      normalizePhone(currentUser.phone) === normalizePhone(saved.phone)
+    ) {
+      handleLogin({
+        name: saved.name,
+        phone: saved.phone,
+        state: saved.state,
+        city: saved.city,
+        loggedInAt: currentUser?.loggedInAt || Date.now(),
+      });
+      handleApplyLocation(saved.state, saved.city);
+    }
   };
 
   const myWorkerProfile = currentUser
     ? workers.find(
         (w) => normalizePhone(w.phone) === normalizePhone(currentUser.phone),
+      ) || null
+    : null;
+
+  const myContractorProfile = currentUser
+    ? contractors.find(
+        (c) => normalizePhone(c.phone) === normalizePhone(currentUser.phone),
       ) || null
     : null;
 
@@ -253,17 +282,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'jobs' && (
-          <JobBoardTab
-            currentUser={currentUser}
-            jobs={jobs}
-            selectedState={location.state}
-            selectedCity={location.city}
-            onReport={setReportTarget}
-            onNotify={showToast}
-          />
-        )}
-
         {activeTab === 'workers' && (
           <WorkerDirectoryTab
             currentUser={currentUser}
@@ -277,10 +295,24 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'contractors' && (
+          <ContractorDirectoryTab
+            currentUser={currentUser}
+            myContractorProfile={myContractorProfile}
+            contractors={contractors}
+            selectedState={location.state}
+            selectedCity={location.city}
+            onUserSynced={handleUserSyncedFromProfile}
+            onReport={setReportTarget}
+            onNotify={showToast}
+          />
+        )}
+
         {activeTab === 'account' && (
           <AccountTab
             currentUser={currentUser}
             myWorkerProfile={myWorkerProfile}
+            myContractorProfile={myContractorProfile}
             liveRequests={liveRequests}
             jobs={jobs}
             selectedState={location.state}

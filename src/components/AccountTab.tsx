@@ -8,20 +8,31 @@ import {
   Briefcase,
   Radio,
   Share2,
+  UserPlus,
+  Clock,
 } from 'lucide-react';
-import { closeJobPost, closeLiveRequest } from '../firebase';
+import {
+  closeJobPost,
+  closeLiveRequest,
+  setContractorHiringStatus,
+  setWorkerAvailabilityStatus,
+} from '../firebase';
 import type {
+  ContractorProfile,
   JobPost,
   LiveRequest,
   UserAccount,
   WorkerProfile,
 } from '../types';
 import {
+  formatFacilitiesText,
   formatRelativeTime,
   isValidIndianMobile,
   normalizePhone,
 } from '../utils/matching';
 import { WorkerProfileForm } from './WorkerProfileForm';
+import { ContractorProfileForm } from './ContractorProfileForm';
+import { RegisterProfilePanel } from './RegisterProfilePanel';
 
 interface MobileLoginFormProps {
   selectedState: string;
@@ -72,7 +83,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
           Join / Login with Mobile Number
         </h2>
         <p className="text-xs text-slate-600">
-          No password or email required. Your worker profile, job posts, and live bookings sync automatically with your mobile number.
+          No password or email required. Your worker profile, contractor profile, and live bookings sync automatically with your mobile number.
         </p>
       </div>
 
@@ -140,6 +151,7 @@ const MobileLoginForm: React.FC<MobileLoginFormProps> = ({
 interface AccountTabProps {
   currentUser: UserAccount | null;
   myWorkerProfile: WorkerProfile | null;
+  myContractorProfile: ContractorProfile | null;
   liveRequests: LiveRequest[];
   jobs: JobPost[];
   selectedState: string;
@@ -154,6 +166,7 @@ interface AccountTabProps {
 export const AccountTab: React.FC<AccountTabProps> = ({
   currentUser,
   myWorkerProfile,
+  myContractorProfile,
   liveRequests,
   jobs,
   selectedState,
@@ -164,7 +177,51 @@ export const AccountTab: React.FC<AccountTabProps> = ({
   onNotify,
   onShareApp,
 }) => {
-  const [showWorkerEditor, setShowWorkerEditor] = useState(false);
+  const [editorMode, setEditorMode] = useState<'none' | 'worker' | 'contractor' | 'register'>('none');
+  const [togglingWorker, setTogglingWorker] = useState(false);
+  const [togglingContractor, setTogglingContractor] = useState(false);
+
+  const handleToggleWorkerAvailability = async () => {
+    if (!myWorkerProfile) return;
+    setTogglingWorker(true);
+    try {
+      const next = !myWorkerProfile.isAvailable;
+      await setWorkerAvailabilityStatus(myWorkerProfile, next);
+      onNotify(
+        next
+          ? 'Worker status set to Available for Work.'
+          : 'Worker status set to Currently Working / Busy.',
+      );
+    } catch (err) {
+      onNotify(
+        err instanceof Error ? err.message : 'Failed to update availability',
+        true,
+      );
+    } finally {
+      setTogglingWorker(false);
+    }
+  };
+
+  const handleToggleContractorHiring = async () => {
+    if (!myContractorProfile) return;
+    setTogglingContractor(true);
+    try {
+      const next = !myContractorProfile.isHiring;
+      await setContractorHiringStatus(myContractorProfile, next);
+      onNotify(
+        next
+          ? 'Contractor Hiring ON — Call buttons visible.'
+          : 'Contractor Hiring OFF — Phone number hidden.',
+      );
+    } catch (err) {
+      onNotify(
+        err instanceof Error ? err.message : 'Failed to update hiring status',
+        true,
+      );
+    } finally {
+      setTogglingContractor(false);
+    }
+  };
 
   if (!currentUser) {
     return (
@@ -175,6 +232,41 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           onLogin={onLogin}
           onNotify={onNotify}
         />
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 max-w-lg mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Register a Worker or Contractor
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Create a public directory profile right away
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setEditorMode((prev) => (prev === 'register' ? 'none' : 'register'))
+            }
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>{editorMode === 'register' ? 'Close Form' : '+ Register Profile'}</span>
+          </button>
+        </div>
+
+        {editorMode === 'register' && (
+          <div className="max-w-3xl mx-auto">
+            <RegisterProfilePanel
+              defaultRole="worker"
+              currentUser={null}
+              selectedState={selectedState}
+              selectedCity={selectedCity}
+              onSaved={onUserSynced}
+              onClose={() => setEditorMode('none')}
+              onNotify={onNotify}
+            />
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 max-w-lg mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -237,14 +329,13 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setShowWorkerEditor((prev) => !prev)}
-            className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
+            onClick={() =>
+              setEditorMode((prev) => (prev === 'register' ? 'none' : 'register'))
+            }
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center gap-1.5"
           >
-            {showWorkerEditor
-              ? 'Close Editor'
-              : myWorkerProfile
-              ? 'Edit Worker Profile'
-              : 'Create Worker Profile'}
+            <UserPlus className="w-4 h-4" />
+            <span>{editorMode === 'register' ? 'Close Form' : '+ Register Profile'}</span>
           </button>
           <button
             type="button"
@@ -257,7 +348,19 @@ export const AccountTab: React.FC<AccountTabProps> = ({
         </div>
       </div>
 
-      {showWorkerEditor && (
+      {editorMode === 'register' && (
+        <RegisterProfilePanel
+          defaultRole="worker"
+          currentUser={currentUser}
+          selectedState={selectedState}
+          selectedCity={selectedCity}
+          onSaved={onUserSynced}
+          onClose={() => setEditorMode('none')}
+          onNotify={onNotify}
+        />
+      )}
+
+      {editorMode === 'worker' && (
         <WorkerProfileForm
           currentUser={currentUser}
           existingProfile={myWorkerProfile}
@@ -265,45 +368,194 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           selectedCity={selectedCity}
           onSaved={(saved) => {
             onUserSynced(saved);
-            setShowWorkerEditor(false);
+            setEditorMode('none');
           }}
-          onCancel={() => setShowWorkerEditor(false)}
+          onCancel={() => setEditorMode('none')}
+          onNotify={onNotify}
+        />
+      )}
+
+      {editorMode === 'contractor' && (
+        <ContractorProfileForm
+          currentUser={currentUser}
+          existingProfile={myContractorProfile}
+          selectedState={selectedState}
+          selectedCity={selectedCity}
+          onSaved={(saved) => {
+            onUserSynced(saved);
+            setEditorMode('none');
+          }}
+          onCancel={() => setEditorMode('none')}
           onNotify={onNotify}
         />
       )}
 
       {/* Synced Summary Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Worker Profile Status */}
+        {/* My Worker Profile + 1-Tap Availability Toggle */}
         <section className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
-          <h3 className="text-base font-bold text-slate-900">
-            My Worker Profile (Synced with Firestore)
-          </h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base font-bold text-slate-900">
+              My Worker Profile
+            </h3>
+            <button
+              type="button"
+              onClick={() =>
+                setEditorMode((prev) => (prev === 'worker' ? 'none' : 'worker'))
+              }
+              className="min-h-[36px] px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800"
+            >
+              {myWorkerProfile ? 'Edit Profile' : 'Create Profile'}
+            </button>
+          </div>
+
           {myWorkerProfile ? (
-            <div className="space-y-1.5 text-xs text-slate-700">
-              <div className="text-sm font-bold text-orange-700">
-                {myWorkerProfile.skill}
+            <div className="space-y-3">
+              <div className="space-y-1.5 text-xs text-slate-700">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-bold text-orange-700">
+                    {myWorkerProfile.skill}
+                  </span>
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                      myWorkerProfile.isAvailable
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        : 'bg-rose-100 text-rose-800 border-rose-200'
+                    }`}
+                  >
+                    {myWorkerProfile.isAvailable ? 'Available for Work' : 'Busy / On Site'}
+                  </span>
+                </div>
+                <div>
+                  Type:{' '}
+                  <strong>
+                    {myWorkerProfile.workerType === 'team_leader'
+                      ? `Team Leader (${myWorkerProfile.teamSize} Workers)`
+                      : 'Individual Worker'}
+                  </strong>
+                </div>
+                <div>
+                  Expected Rate:{' '}
+                  <strong className="tabular-nums">₹{myWorkerProfile.dailyRate}/day</strong> ·{' '}
+                  {myWorkerProfile.city}, {myWorkerProfile.state}
+                </div>
+                <div>
+                  Outstation Ready:{' '}
+                  <strong>{myWorkerProfile.outstationReady ? 'Yes' : 'No'}</strong>
+                </div>
               </div>
-              <div>
-                Type:{' '}
-                <strong>
-                  {myWorkerProfile.workerType === 'team_leader'
-                    ? `Team Leader (${myWorkerProfile.teamSize} Workers)`
-                    : 'Individual Worker'}
-                </strong>
-              </div>
-              <div>
-                Wage: <strong className="tabular-nums">₹{myWorkerProfile.dailyRate}/day</strong> ·{' '}
-                Location: {myWorkerProfile.city}, {myWorkerProfile.state}
-              </div>
-              <div>
-                Outstation Ready:{' '}
-                <strong>{myWorkerProfile.outstationReady ? 'Yes' : 'No'}</strong>
-              </div>
+
+              <button
+                type="button"
+                disabled={togglingWorker}
+                onClick={handleToggleWorkerAvailability}
+                className={`w-full min-h-[44px] rounded-xl text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 transition-colors ${
+                  myWorkerProfile.isAvailable
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                {myWorkerProfile.isAvailable ? (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    <span>
+                      {togglingWorker
+                        ? 'Updating...'
+                        : 'Available for Work (Tap to set Busy)'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      {togglingWorker
+                        ? 'Updating...'
+                        : 'Busy / On Site (Tap to set Available)'}
+                    </span>
+                  </>
+                )}
+              </button>
             </div>
           ) : (
             <p className="text-xs text-slate-600">
-              You haven&apos;t created a separate worker profile yet. You can create one above, or accept live jobs directly without one.
+              You haven&apos;t created a worker directory profile yet. Tap &quot;Create Profile&quot; to list your skill and availability.
+            </p>
+          )}
+        </section>
+
+        {/* My Contractor Profile + 1-Tap Hiring ON/OFF Toggle */}
+        <section className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base font-bold text-slate-900">
+              My Contractor Profile
+            </h3>
+            <button
+              type="button"
+              onClick={() =>
+                setEditorMode((prev) =>
+                  prev === 'contractor' ? 'none' : 'contractor',
+                )
+              }
+              className="min-h-[36px] px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800"
+            >
+              {myContractorProfile ? 'Edit Profile' : 'Create Profile'}
+            </button>
+          </div>
+
+          {myContractorProfile ? (
+            <div className="space-y-3">
+              <div className="space-y-1.5 text-xs text-slate-700">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-bold text-slate-900">
+                    {myContractorProfile.companyName || myContractorProfile.name}
+                  </span>
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                      myContractorProfile.isHiring
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-300'
+                    }`}
+                  >
+                    {myContractorProfile.isHiring ? 'Hiring ON' : 'Hiring OFF'}
+                  </span>
+                </div>
+                <div>
+                  Trades Hired:{' '}
+                  <strong>{myContractorProfile.tradesHired.join(', ')}</strong>
+                </div>
+                <div>
+                  Location: {myContractorProfile.city}, {myContractorProfile.state}
+                </div>
+                {formatFacilitiesText(myContractorProfile.facilities) && (
+                  <div className="text-emerald-800 font-semibold">
+                    Facilities: {formatFacilitiesText(myContractorProfile.facilities)}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                disabled={togglingContractor}
+                onClick={handleToggleContractorHiring}
+                className={`w-full min-h-[44px] rounded-xl text-xs font-bold text-white inline-flex items-center justify-center gap-1.5 transition-colors ${
+                  myContractorProfile.isHiring
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-slate-700 hover:bg-slate-800'
+                }`}
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>
+                  {togglingContractor
+                    ? 'Updating...'
+                    : myContractorProfile.isHiring
+                    ? 'Hiring ON (Tap to hide phone & turn OFF)'
+                    : 'Hiring OFF (Tap to turn Hiring ON)'}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-600">
+              Contractors can list the trades they hire, site facilities, and turn Hiring ON/OFF anytime to avoid unwanted calls.
             </p>
           )}
         </section>
@@ -346,7 +598,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           )}
         </section>
 
-        {/* My Posted Live Bookings */}
+        {/* My Posted Live Bookings & Regular Jobs */}
         <section className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-orange-600" />
@@ -354,7 +606,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
               My Live Requests ({myPostedLiveRequests.length})
             </h3>
           </div>
-          {myPostedLiveRequests.length === 0 ? (
+          {myPostedLiveRequests.length === 0 && myJobPosts.length === 0 ? (
             <p className="text-xs text-slate-600">
               No live requests posted with this number yet.
             </p>
@@ -386,24 +638,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
                   )}
                 </div>
               ))}
-            </div>
-          )}
-        </section>
 
-        {/* My Posted Jobs */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-slate-700" />
-            <h3 className="text-base font-bold text-slate-900">
-              My Job Posts ({myJobPosts.length})
-            </h3>
-          </div>
-          {myJobPosts.length === 0 ? (
-            <p className="text-xs text-slate-600">
-              No regular jobs posted with this number yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
               {myJobPosts.map((job) => (
                 <div
                   key={job.id}

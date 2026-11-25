@@ -7,13 +7,16 @@ import {
   computeAcceptTransactionUpdate,
   isValidIndianMobile,
   isWithinHours,
-  LIVE_CLOUD_RUN_URL,
+  matchesDirectoryLocationFilter,
   matchesLocationFilter,
   normalizePhone,
+  PUBLIC_APP_URL,
   resolveSkill,
+  resolveTradesList,
   sanitizeForFirestore,
+  splitTradesToSelection,
 } from './matching';
-import { CUSTOM_SKILL_OPTION } from '../data/constants';
+import { CUSTOM_SKILL_OPTION, SKILLS_LIST } from '../data/constants';
 import type { LiveRequest } from '../types';
 
 const BASE_TIME = 1_760_000_000_000;
@@ -85,6 +88,57 @@ test('filters correctly between city and all_india modes and cleans legacy city 
   );
 });
 
+test('filters directory profiles by My City, All India, State, and City inputs', () => {
+  assert.equal(
+    matchesDirectoryLocationFilter({
+      itemState: 'Odisha',
+      itemCity: 'Rourkela',
+      mode: 'city',
+      selectedState: 'Odisha',
+      selectedCity: 'Rourkela',
+      filterState: 'ALL',
+      filterCity: '',
+    }),
+    true,
+  );
+  assert.equal(
+    matchesDirectoryLocationFilter({
+      itemState: 'Gujarat',
+      itemCity: 'Surat',
+      mode: 'city',
+      selectedState: 'Odisha',
+      selectedCity: 'Rourkela',
+      filterState: 'ALL',
+      filterCity: '',
+    }),
+    false,
+  );
+  assert.equal(
+    matchesDirectoryLocationFilter({
+      itemState: 'Gujarat',
+      itemCity: 'Surat',
+      mode: 'all_india',
+      selectedState: 'Odisha',
+      selectedCity: 'Rourkela',
+      filterState: 'Gujarat',
+      filterCity: 'Surat',
+    }),
+    true,
+  );
+});
+
+test('resolves and splits contractor multi-trade checkboxes including custom trade', () => {
+  const trades = resolveTradesList(
+    ['MIG Welder', CUSTOM_SKILL_OPTION],
+    'Crane Operator',
+  );
+  assert.deepEqual(trades, ['MIG Welder', 'Crane Operator']);
+
+  const parsed = splitTradesToSelection(trades, SKILLS_LIST);
+  assert.deepEqual(parsed.selected, ['MIG Welder', CUSTOM_SKILL_OPTION]);
+  assert.equal(parsed.custom, 'Crane Operator');
+});
+
 test('disables accept on contractor own request and shows full only when confirmedCount >= requiredCount', () => {
   const ownReq = makeLiveRequest({ contractorPhone: '9876543210' });
   const ownRes = canWorkerAcceptRequest(ownReq, '9876543210', BASE_TIME);
@@ -118,10 +172,11 @@ test('computes accept transaction update without worker profile and strips undef
   assert.deepEqual(cleaned, { a: 1, nested: { d: 'ok' } });
 });
 
-test('builds exact Share App message with live Cloud Run URL', () => {
+test('builds exact Share App message with PUBLIC_APP_URL on its own line', () => {
   const msg = buildShareAppText();
+  assert.equal(PUBLIC_APP_URL, 'https://kaam-connect-2.ai.studio');
   assert.equal(
     msg,
-    `Kaam Connect — Sidha Kaam, Sidha Sampark (100% Free)! Welder, Fitter, Rigger, Gas Cutter, Rajmistri aur Helper ke liye bina commission kaam payein ya bulayein. Abhi kholein: ${LIVE_CLOUD_RUN_URL}`,
+    'Kaam Connect — Direct Work, Direct Contact (100% Free)\nWelder, Fitter, Rigger, Gas Cutter, Mason & Helper ke liye bina commission kaam payein ya bulayein.\n\nAbhi app kholein:\nhttps://kaam-connect-2.ai.studio',
   );
 });

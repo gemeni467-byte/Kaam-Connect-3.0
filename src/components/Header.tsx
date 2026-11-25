@@ -13,8 +13,8 @@ interface HeaderProps {
 
 const DESKTOP_TABS: Array<{ id: ActiveTab; label: string }> = [
   { id: 'live', label: 'Live Duty' },
-  { id: 'jobs', label: 'Find Work' },
-  { id: 'workers', label: 'Hire Workers' },
+  { id: 'workers', label: 'Workers List' },
+  { id: 'contractors', label: 'Contractors List' },
   { id: 'account', label: 'My Account' },
 ];
 

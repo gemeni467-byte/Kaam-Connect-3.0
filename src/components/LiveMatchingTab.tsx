@@ -738,7 +738,7 @@ export const LiveMatchingTab: React.FC<LiveMatchingTabProps> = ({
                 No Active Live Requests Right Now
               </h3>
               <p className="text-sm text-slate-600">
-                No live requests found in the last 6 hours for this filter. Try switching to &quot;All India&quot; or check the &quot;Find Work&quot; tab.
+                No live requests found in the last 6 hours for this filter. Try switching to &quot;All India&quot; or check the &quot;Contractors List&quot; tab.
               </p>
             </div>
           ) : (

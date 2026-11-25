@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Users, User, Plane } from 'lucide-react';
+import { Save, Users, User, Plane, CheckCircle2 } from 'lucide-react';
 import {
   CUSTOM_SKILL_OPTION,
   INDIA_STATES,
@@ -20,6 +20,7 @@ interface WorkerProfileFormProps {
   existingProfile: WorkerProfile | null;
   selectedState: string;
   selectedCity: string;
+  startBlank?: boolean;
   onSaved: (savedUser: { name: string; phone: string; state: string; city: string }) => void;
   onCancel?: () => void;
   onNotify: (msg: string, isError?: boolean) => void;
@@ -37,7 +38,7 @@ interface WorkerFormState {
   experienceYears: string;
   state: string;
   city: string;
-  isOnline: boolean;
+  isAvailable: boolean;
 }
 
 function getInitialSkillState(skill?: string): { selected: string; custom: string } {
@@ -53,30 +54,32 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
   existingProfile,
   selectedState,
   selectedCity,
+  startBlank = false,
   onSaved,
   onCancel,
   onNotify,
 }) => {
-  const initialSkill = getInitialSkillState(existingProfile?.skill);
+  const initialProfile = startBlank ? null : existingProfile;
+  const initialSkill = getInitialSkillState(initialProfile?.skill);
 
   const [form, setForm] = useState<WorkerFormState>({
-    name: existingProfile?.name || currentUser?.name || '',
-    phone: existingProfile?.phone || currentUser?.phone || '',
+    name: initialProfile?.name || (startBlank ? '' : currentUser?.name || ''),
+    phone: initialProfile?.phone || (startBlank ? '' : currentUser?.phone || ''),
     selectedSkill: initialSkill.selected,
     customSkill: initialSkill.custom,
-    workerType: existingProfile?.workerType || 'individual',
-    teamSize: String(existingProfile?.teamSize || 5),
-    outstationReady: Boolean(existingProfile?.outstationReady),
-    dailyRate: String(existingProfile?.dailyRate || 650),
-    experienceYears: String(existingProfile?.experienceYears || 2),
-    state: existingProfile?.state || selectedState,
-    city: existingProfile?.city || selectedCity,
-    isOnline: existingProfile?.isOnline ?? true,
+    workerType: initialProfile?.workerType || 'individual',
+    teamSize: String(initialProfile?.teamSize || 5),
+    outstationReady: Boolean(initialProfile?.outstationReady),
+    dailyRate: String(initialProfile?.dailyRate || 650),
+    experienceYears: String(initialProfile?.experienceYears || 2),
+    state: initialProfile?.state || selectedState,
+    city: initialProfile?.city || selectedCity,
+    isAvailable: initialProfile?.isAvailable ?? initialProfile?.isOnline ?? true,
   });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (existingProfile) {
+    if (!startBlank && existingProfile) {
       const sk = getInitialSkillState(existingProfile.skill);
       setForm({
         name: existingProfile.name,
@@ -90,16 +93,25 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
         experienceYears: String(existingProfile.experienceYears || 0),
         state: existingProfile.state,
         city: existingProfile.city,
-        isOnline: existingProfile.isOnline,
+        isAvailable: existingProfile.isAvailable ?? existingProfile.isOnline ?? true,
       });
-    } else if (currentUser) {
+    } else if (!startBlank && currentUser) {
       setForm((prev) => ({
         ...prev,
         name: prev.name || currentUser.name,
         phone: prev.phone || currentUser.phone,
       }));
     }
-  }, [existingProfile, currentUser]);
+  }, [existingProfile, currentUser, startBlank]);
+
+  const handleUseMyDetails = () => {
+    if (!currentUser) return;
+    setForm((prev) => ({
+      ...prev,
+      name: currentUser.name,
+      phone: currentUser.phone,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +119,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
     const finalSkill = resolveSkill(form.selectedSkill, form.customSkill);
 
     if (!form.name.trim()) {
-      onNotify('Please enter your full name', true);
+      onNotify('Please enter worker full name', true);
       return;
     }
     if (!isValidIndianMobile(cleanPhone)) {
@@ -115,12 +127,17 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       return;
     }
     if (!finalSkill) {
-      onNotify('Please select or enter your skill / trade', true);
+      onNotify('Please select or enter a skill / trade', true);
       return;
     }
 
     setSubmitting(true);
     try {
+      const isEditingSelf =
+        !startBlank &&
+        existingProfile &&
+        normalizePhone(existingProfile.phone) === cleanPhone;
+
       await saveWorkerProfile({
         name: form.name.trim(),
         phone: cleanPhone,
@@ -135,11 +152,12 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
         state: form.state,
         city: form.city.trim() || selectedCity,
         experienceYears: Math.max(0, Number(form.experienceYears) || 0),
-        isOnline: form.isOnline,
-        createdAt: existingProfile?.createdAt,
+        isOnline: form.isAvailable,
+        isAvailable: form.isAvailable,
+        createdAt: isEditingSelf ? existingProfile.createdAt : undefined,
       });
 
-      onNotify('Worker profile saved!');
+      onNotify('Worker profile saved to directory!');
       onSaved({
         name: form.name.trim(),
         phone: cleanPhone,
@@ -161,15 +179,27 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       onSubmit={handleSubmit}
       className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 space-y-4"
     >
-      <div className="border-b border-slate-100 pb-3">
-        <h3 className="text-base font-bold text-slate-900">
-          {existingProfile
-            ? 'Update Worker Profile'
-            : 'Create Worker / Squad Profile'}
-        </h3>
-        <p className="text-xs text-slate-600 mt-0.5">
-          Contractors can call and message you directly without any middleman
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">
+            {!startBlank && existingProfile
+              ? 'Update Worker Profile'
+              : 'Register Worker Profile'}
+          </h3>
+          <p className="text-xs text-slate-600 mt-0.5">
+            Register yourself or any worker on the spot with Name &amp; 10-digit Mobile Number
+          </p>
+        </div>
+
+        {startBlank && currentUser && (
+          <button
+            type="button"
+            onClick={handleUseMyDetails}
+            className="min-h-[36px] px-3 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 whitespace-nowrap"
+          >
+            Fill My Details
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -178,7 +208,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-name"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            Your Full Name <span className="text-orange-600">*</span>
+            Full Name <span className="text-orange-600">*</span>
           </label>
           <input
             id="worker-name"
@@ -221,7 +251,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
 
       <SkillSelectField
         id="worker-skill-select"
-        label="Your Primary Skill / Trade"
+        label="Primary Skill / Trade"
         selectedSkill={form.selectedSkill}
         customSkill={form.customSkill}
         onSelectSkill={(val) =>
@@ -236,7 +266,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
       {/* Individual vs Team Leader */}
       <div className="space-y-2">
         <span className="block text-sm font-semibold text-slate-800">
-          Work Type
+          Registration Type
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
@@ -311,36 +341,72 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
         )}
       </div>
 
-      {/* Outstation Ready Toggle */}
-      <button
-        type="button"
-        aria-pressed={form.outstationReady}
-        onClick={() =>
-          setForm((prev) => ({
-            ...prev,
-            outstationReady: !prev.outstationReady,
-          }))
-        }
-        className={`w-full min-h-[48px] rounded-xl border px-4 py-2.5 text-left flex items-center justify-between gap-3 transition-colors ${
-          form.outstationReady
-            ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-            : 'border-slate-300 bg-white text-slate-700'
-        }`}
-      >
-        <span className="flex items-center gap-2 text-xs sm:text-sm font-bold">
-          <Plane className="w-4 h-4 shrink-0" />
-          <span>Ready to work in other cities / states</span>
-        </span>
-        <span
-          className={`px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 ${
-            form.outstationReady
-              ? 'bg-emerald-600 text-white'
-              : 'bg-slate-200 text-slate-700'
+      {/* Availability Status Toggle + Outstation Toggle */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button
+          type="button"
+          aria-pressed={form.isAvailable}
+          onClick={() =>
+            setForm((prev) => ({
+              ...prev,
+              isAvailable: !prev.isAvailable,
+            }))
+          }
+          className={`w-full min-h-[48px] rounded-xl border px-3.5 py-2.5 text-left flex items-center justify-between gap-2 transition-colors ${
+            form.isAvailable
+              ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+              : 'border-rose-300 bg-rose-50 text-rose-900'
           }`}
         >
-          {form.outstationReady ? 'Yes' : 'No'}
-        </span>
-      </button>
+          <span className="flex items-center gap-2 text-xs font-bold">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              {form.isAvailable
+                ? 'Available for Work'
+                : 'Currently Working / Busy'}
+            </span>
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0 ${
+              form.isAvailable
+                ? 'bg-emerald-600 text-white'
+                : 'bg-rose-600 text-white'
+            }`}
+          >
+            {form.isAvailable ? 'Available' : 'Busy'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          aria-pressed={form.outstationReady}
+          onClick={() =>
+            setForm((prev) => ({
+              ...prev,
+              outstationReady: !prev.outstationReady,
+            }))
+          }
+          className={`w-full min-h-[48px] rounded-xl border px-3.5 py-2.5 text-left flex items-center justify-between gap-2 transition-colors ${
+            form.outstationReady
+              ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+              : 'border-slate-300 bg-white text-slate-700'
+          }`}
+        >
+          <span className="flex items-center gap-2 text-xs font-bold">
+            <Plane className="w-4 h-4 shrink-0" />
+            <span>Ready to work in other cities/states</span>
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0 ${
+              form.outstationReady
+                ? 'bg-emerald-600 text-white'
+                : 'bg-slate-200 text-slate-700'
+            }`}
+          >
+            {form.outstationReady ? 'Yes' : 'No'}
+          </span>
+        </button>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         <div>
@@ -348,7 +414,7 @@ export const WorkerProfileForm: React.FC<WorkerProfileFormProps> = ({
             htmlFor="worker-daily-rate"
             className="block text-sm font-semibold text-slate-800 mb-1"
           >
-            Daily Wage (₹/day)
+            Expected Daily Rate (₹/day)
           </label>
           <input
             id="worker-daily-rate"

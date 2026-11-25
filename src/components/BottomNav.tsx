@@ -20,8 +20,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     badge?: number;
   }> = [
     { id: 'live', label: 'Live Duty', Icon: Radio, badge: liveCount },
-    { id: 'jobs', label: 'Find Work', Icon: Briefcase },
-    { id: 'workers', label: 'Hire Workers', Icon: Users },
+    { id: 'workers', label: 'Workers List', Icon: Users },
+    { id: 'contractors', label: 'Contractors List', Icon: Briefcase },
     { id: 'account', label: 'My Account', Icon: UserCircle },
   ];
 

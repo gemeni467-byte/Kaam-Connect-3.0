@@ -90,6 +90,102 @@ export function matchesLocationFilter(
   return userTokens.some((token) => itemTokens.includes(token));
 }
 
+export function matchesDirectoryLocationFilter(params: {
+  itemState: string;
+  itemCity: string;
+  mode: LocationFilterMode;
+  selectedState: string;
+  selectedCity: string;
+  filterState: string;
+  filterCity: string;
+}): boolean {
+  const {
+    itemState,
+    itemCity,
+    mode,
+    selectedState,
+    selectedCity,
+    filterState,
+    filterCity,
+  } = params;
+
+  const activeState = mode === 'city' ? filterState || selectedState : filterState;
+  const activeCity = mode === 'city' ? filterCity || selectedCity : filterCity;
+
+  if (activeState && activeState !== 'ALL') {
+    if (
+      String(itemState || '').trim().toLowerCase() !==
+      String(activeState).trim().toLowerCase()
+    ) {
+      return false;
+    }
+  }
+
+  if (activeCity && activeCity.trim()) {
+    return matchesLocationFilter(
+      itemState,
+      itemCity,
+      activeState === 'ALL' ? itemState : activeState,
+      activeCity,
+      'city',
+    );
+  }
+
+  if (mode === 'city') {
+    return matchesLocationFilter(
+      itemState,
+      itemCity,
+      selectedState,
+      selectedCity,
+      'city',
+    );
+  }
+
+  return true;
+}
+
+export function resolveTradesList(
+  selectedTrades: string[],
+  customTrade: string,
+): string[] {
+  const list: string[] = [];
+  for (const t of selectedTrades) {
+    if (t === CUSTOM_SKILL_OPTION) {
+      const custom = customTrade.trim();
+      if (custom && !list.includes(custom)) {
+        list.push(custom);
+      }
+    } else if (t.trim() && !list.includes(t.trim())) {
+      list.push(t.trim());
+    }
+  }
+  return list;
+}
+
+export function splitTradesToSelection(
+  trades: string[],
+  knownSkills: string[],
+): { selected: string[]; custom: string } {
+  const selected: string[] = [];
+  const customList: string[] = [];
+  for (const raw of trades) {
+    const t = String(raw || '').trim();
+    if (!t) continue;
+    if (knownSkills.includes(t) && t !== CUSTOM_SKILL_OPTION) {
+      selected.push(t);
+    } else {
+      customList.push(t);
+    }
+  }
+  if (customList.length > 0 && !selected.includes(CUSTOM_SKILL_OPTION)) {
+    selected.push(CUSTOM_SKILL_OPTION);
+  }
+  return {
+    selected,
+    custom: customList.join(', '),
+  };
+}
+
 export function sanitizeForFirestore<T>(value: T): T {
   if (Array.isArray(value)) {
     return value
@@ -233,33 +329,25 @@ export function buildWhatsAppShareUrl(message: string): string {
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 
-export const LIVE_CLOUD_RUN_URL =
-  'https://ais-pre-dka5gnxodntfhzxn7g7fyv-915210984650.asia-northeast1.run.app';
+export const PUBLIC_APP_URL = 'https://kaam-connect-2.ai.studio';
 
 export function getAppShareLink(): string {
-  if (
-    typeof window !== 'undefined' &&
-    window.location?.origin &&
-    !window.location.origin.includes('localhost') &&
-    !window.location.origin.startsWith('capacitor:')
-  ) {
-    return window.location.origin;
-  }
-  return LIVE_CLOUD_RUN_URL;
+  return PUBLIC_APP_URL;
 }
 
-export function buildShareAppText(appUrl: string = LIVE_CLOUD_RUN_URL): string {
-  return `Kaam Connect — Sidha Kaam, Sidha Sampark (100% Free)! Welder, Fitter, Rigger, Gas Cutter, Rajmistri aur Helper ke liye bina commission kaam payein ya bulayein. Abhi kholein: ${appUrl}`;
+export function buildShareAppText(appUrl: string = PUBLIC_APP_URL): string {
+  return `Kaam Connect — Direct Work, Direct Contact (100% Free)\nWelder, Fitter, Rigger, Gas Cutter, Mason & Helper ke liye bina commission kaam payein ya bulayein.\n\nAbhi app kholein:\n${appUrl}`;
 }
 
 export async function shareKaamConnectApp(): Promise<'shared' | 'whatsapp' | 'cancelled'> {
-  const shareText = buildShareAppText(LIVE_CLOUD_RUN_URL);
+  const shareText = buildShareAppText(PUBLIC_APP_URL);
 
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
       await navigator.share({
         title: 'Kaam Connect',
         text: shareText,
+        url: PUBLIC_APP_URL,
       });
       return 'shared';
     } catch (err) {
@@ -270,7 +358,11 @@ export async function shareKaamConnectApp(): Promise<'shared' | 'whatsapp' | 'ca
     }
   }
 
-  window.open(buildWhatsAppShareUrl(shareText), '_blank', 'noopener,noreferrer');
+  window.open(
+    'https://wa.me/?text=' + encodeURIComponent(shareText),
+    '_blank',
+    'noopener,noreferrer',
+  );
   return 'whatsapp';
 }
 
