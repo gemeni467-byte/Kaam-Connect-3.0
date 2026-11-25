@@ -49,13 +49,20 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
 }) => {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [locationFilter, setLocationFilter] = useState<LocationFilterMode>('city');
-  const [filterState, setFilterState] = useState<string>('ALL');
-  const [filterCity, setFilterCity] = useState<string>('');
+  const [filterState, setFilterState] = useState<string>(selectedState);
+  const [filterCity, setFilterCity] = useState<string>(selectedCity);
   const [skillFilter, setSkillFilter] = useState<string>('ALL');
   const [customSkillFilter, setCustomSkillFilter] = useState<string>('');
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [onlyOutstation, setOnlyOutstation] = useState(false);
   const [togglingMyStatus, setTogglingMyStatus] = useState(false);
+
+  React.useEffect(() => {
+    if (locationFilter === 'city') {
+      setFilterState(selectedState);
+      setFilterCity(selectedCity);
+    }
+  }, [locationFilter, selectedState, selectedCity]);
 
   const resolvedSkill =
     skillFilter === 'ALL' ? '' : resolveSkill(skillFilter, customSkillFilter).toLowerCase();
@@ -63,6 +70,9 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
   const handleSelectLocationMode = (mode: LocationFilterMode) => {
     setLocationFilter(mode);
     if (mode === 'city') {
+      setFilterState(selectedState);
+      setFilterCity(selectedCity);
+    } else {
       setFilterState('ALL');
       setFilterCity('');
     }
@@ -228,16 +238,12 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
             </label>
             <select
               id="workers-filter-state"
-              value={locationFilter === 'city' && filterState === 'ALL' ? selectedState : filterState}
+              value={filterState}
               onChange={(e) => {
                 const val = e.target.value;
+                setLocationFilter('all_india');
                 setFilterState(val);
-                if (val === 'ALL') {
-                  setLocationFilter('all_india');
-                  setFilterCity('');
-                } else {
-                  setLocationFilter('all_india');
-                }
+                setFilterCity('');
               }}
               className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
             >
@@ -261,10 +267,11 @@ export const WorkerDirectoryTab: React.FC<WorkerDirectoryTabProps> = ({
               id="workers-filter-city"
               type="text"
               list="workers-filter-city-list"
-              value={locationFilter === 'city' && !filterCity ? selectedCity : filterCity}
+              value={filterCity}
               onChange={(e) => {
-                setFilterCity(e.target.value);
-                if (e.target.value.trim()) {
+                const nextCity = e.target.value;
+                setFilterCity(nextCity);
+                if (locationFilter === 'city' && nextCity !== selectedCity) {
                   setLocationFilter('all_india');
                 }
               }}

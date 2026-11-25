@@ -56,12 +56,19 @@ export const ContractorDirectoryTab: React.FC<ContractorDirectoryTabProps> = ({
 }) => {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [locationFilter, setLocationFilter] = useState<LocationFilterMode>('city');
-  const [filterState, setFilterState] = useState<string>('ALL');
-  const [filterCity, setFilterCity] = useState<string>('');
+  const [filterState, setFilterState] = useState<string>(selectedState);
+  const [filterCity, setFilterCity] = useState<string>(selectedCity);
   const [tradeFilter, setTradeFilter] = useState<string>('ALL');
   const [customTradeFilter, setCustomTradeFilter] = useState<string>('');
   const [onlyActivelyHiring, setOnlyActivelyHiring] = useState(false);
   const [togglingMyHiring, setTogglingMyHiring] = useState(false);
+
+  React.useEffect(() => {
+    if (locationFilter === 'city') {
+      setFilterState(selectedState);
+      setFilterCity(selectedCity);
+    }
+  }, [locationFilter, selectedState, selectedCity]);
 
   const resolvedTrade =
     tradeFilter === 'ALL' ? '' : resolveSkill(tradeFilter, customTradeFilter).toLowerCase();
@@ -69,6 +76,9 @@ export const ContractorDirectoryTab: React.FC<ContractorDirectoryTabProps> = ({
   const handleSelectLocationMode = (mode: LocationFilterMode) => {
     setLocationFilter(mode);
     if (mode === 'city') {
+      setFilterState(selectedState);
+      setFilterCity(selectedCity);
+    } else {
       setFilterState('ALL');
       setFilterCity('');
     }
@@ -231,16 +241,12 @@ export const ContractorDirectoryTab: React.FC<ContractorDirectoryTabProps> = ({
             </label>
             <select
               id="contractors-filter-state"
-              value={locationFilter === 'city' && filterState === 'ALL' ? selectedState : filterState}
+              value={filterState}
               onChange={(e) => {
                 const val = e.target.value;
+                setLocationFilter('all_india');
                 setFilterState(val);
-                if (val === 'ALL') {
-                  setLocationFilter('all_india');
-                  setFilterCity('');
-                } else {
-                  setLocationFilter('all_india');
-                }
+                setFilterCity('');
               }}
               className="w-full min-h-[46px] rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
             >
@@ -264,10 +270,11 @@ export const ContractorDirectoryTab: React.FC<ContractorDirectoryTabProps> = ({
               id="contractors-filter-city"
               type="text"
               list="contractors-filter-city-list"
-              value={locationFilter === 'city' && !filterCity ? selectedCity : filterCity}
+              value={filterCity}
               onChange={(e) => {
-                setFilterCity(e.target.value);
-                if (e.target.value.trim()) {
+                const nextCity = e.target.value;
+                setFilterCity(nextCity);
+                if (locationFilter === 'city' && nextCity !== selectedCity) {
                   setLocationFilter('all_india');
                 }
               }}
@@ -380,11 +387,18 @@ export const ContractorDirectoryTab: React.FC<ContractorDirectoryTabProps> = ({
                 </div>
 
                 <div className="space-y-2 text-xs text-slate-700 border-t border-slate-100 pt-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span>
-                      {contractor.city}, {contractor.state}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>
+                        {contractor.city}, {contractor.state}
+                      </span>
+                    </div>
+                    {contractor.isHiring && (
+                      <span className="font-mono tabular-nums font-semibold text-slate-800">
+                        +91 {contractor.phone}
+                      </span>
+                    )}
                   </div>
 
                   <div>
